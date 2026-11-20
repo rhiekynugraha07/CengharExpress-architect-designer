@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cenghar Express Cililin — 360° Interactive 3D Viewer (Project #1)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    canvas {
+      touch-action: none;
+      user-select: none;
+    }
+    .mode-orbit { cursor: grab; }
+    .mode-orbit:active { cursor: grabbing; }
+    .mode-pan { cursor: move; }
+    .pill-btn.active {
+      background-color: #8B1E2D;
+      color: #FAF5EC;
+      border-color: #8B1E2D;
+    }
+    .tool-btn.active {
+      background-color: #2B2B2B;
+      color: #FAF5EC;
+      border-color: #2B2B2B;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased m-0 p-0">
+  <div class="max-w-6xl mx-auto p-3 sm:p-4 space-y-3">
+    <!-- Top Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pb-2.5 border-b border-[var(--border)]">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:#8B1E2D;"></span>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight">PROJECT #1: CENGHAR EXPRESS CILILIN — 360° 3D Studio</h1>
+          <span class="text-xs px-2 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] font-mono">Container Booth + Terasering Batu Kali</span>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
+          Putar 360° & geser bebas • Booth Container Putih + Awning Krem • Courtyard Kolam & Bata Ekspos • Terasering Batu Kali 3 Tingkat
+        </p>
+      </div>
+
+      <!-- Lighting Mode Selector -->
+      <div class="flex items-center gap-1.5 text-xs">
+        <span class="text-[var(--muted-foreground)] mr-1">Lighting:</span>
+        <button data-light="day" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] transition">
+          Siang
+        </button>
+        <button data-light="golden" class="pill-btn active px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] transition">
+          Sore (Golden)
+        </button>
+        <button data-light="night" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] transition">
+          Malam
+        </button>
+      </div>
+    </div>
+
+    <!-- Main 3D Viewport Card -->
+    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
+      <!-- Top Control Toolbar -->
+      <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border)] text-xs">
+        <!-- Drag Mode Toggle: Putar 360 vs Geser (Pan) -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-[var(--muted-foreground)] font-medium mr-1">Mode Drag:</span>
+          <button id="btnModeOrbit" class="tool-btn active px-2.5 py-1 rounded-md border border-[var(--border)] font-medium flex items-center gap-1 transition">
+            <span>↻</span> Putar 360° (Orbit)
+          </button>
+          <button id="btnModePan" class="tool-btn px-2.5 py-1 rounded-md border border-[var(--border)] font-medium flex items-center gap-1 transition">
+            <span>✥</span> Geser Lahan (Pan)
+          </button>
+        </div>
+
+        <!-- Camera Presets -->
+        <div class="flex flex-wrap items-center gap-1">
+          <button data-cam="overview" class="pill-btn active px-2.5 py-1 rounded-md border border-[var(--border)] transition">Overview</button>
+          <button data-cam="booth" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">1. Container Booth</button>
+          <button data-cam="pond" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">2. Kolam & Courtyard</button>
+          <button data-cam="communal" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">3. Meja Komunal</button>
+          <button data-cam="terrace" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">4. Terasering 3 Tingkat</button>
+          <button data-cam="parking" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">5. Parkir Bawah</button>
+        </div>
+
+        <!-- Options -->
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-1 text-[var(--muted-foreground)] cursor-pointer select-none">
+            <input id="toggleHotspots" type="checkbox" checked class="accent-[#8B1E2D]" />
+            Label 3D
+          </label>
+          <label class="flex items-center gap-1 text-[var(--muted-foreground)] cursor-pointer select-none">
+            <input id="autoRotate" type="checkbox" class="accent-[#8B1E2D]" />
+            Auto-360°
+          </label>
+        </div>
+      </div>
+
+      <!-- 3D Canvas Viewport -->
+      <div class="relative w-full" style="height: 520px;">
+        <canvas id="scene3d" class="w-full h-full block mode-orbit"></canvas>
+
+        <!-- On-Screen 360° & Pan Navigation Pad (Bottom Right) -->
+        <div class="absolute bottom-3 right-3 flex items-end gap-2">
+          <!-- D-Pad Geser (Pan) -->
+          <div class="p-1.5 rounded-lg backdrop-blur-md border border-white/15 grid grid-cols-3 gap-1 text-xs"
+               style="background: rgba(22, 20, 18, 0.75); color: #FAF5EC;">
+            <div></div>
+            <button data-pan="up" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Maju">↑</button>
+            <div></div>
+            <button data-pan="left" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Kiri">←</button>
+            <button id="btnResetCam" class="w-7 h-7 rounded bg-[#8B1E2D] hover:opacity-90 flex items-center justify-center font-bold" title="Reset Kamera">⌂</button>
+            <button data-pan="right" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Kanan">→</button>
+            <div></div>
+            <button data-pan="down" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Mundur">↓</button>
+            <div></div>
+          </div>
+
+          <!-- Zoom Stack -->
+          <div class="flex flex-col gap-1 p-1.5 rounded-lg backdrop-blur-md border border-white/15"
+               style="background: rgba(22, 20, 18, 0.75); color: #FAF5EC;">
+            <button id="zoomIn" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-sm font-bold flex items-center justify-center" title="Zoom In">+</button>
+            <button id="zoomOut" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-sm font-bold flex items-center justify-center" title="Zoom Out">−</button>
+          </div>
+        </div>
+
+        <!-- Bottom-Left 360° Quick Scrub Slider & Instructions -->
+        <div class="absolute bottom-3 left-3 flex flex-col gap-1.5 max-w-xs p-2.5 rounded-lg backdrop-blur-md border border-white/15 text-xs"
+             style="background: rgba(22, 20, 18, 0.75); color: #FAF5EC;">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-medium">Putar Sudut 360°:</span>
+            <span id="angleReadout" class="font-mono text-[11px] opacity-80">325°</span>
+          </div>
+          <input id="yawSlider" type="range" min="-180" max="180" value="-35" class="w-56 accent-[#8B1E2D] cursor-pointer" />
+          <div class="text-[11px] opacity-80">
+            • Klik kiri + geser: <b>Putar 360°</b> • Klik kanan / tombol Geser: <b>Geser Lahan</b> • Scroll: <b>Zoom</b>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Specs Bar -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5 text-xs">
+      <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
+        <div class="font-semibold">1. Container Booth (6.0 × 2.5m)</div>
+        <p class="text-[var(--muted-foreground)] mt-0.5">
+          Container gelombang putih-krem di atas dek kayu + 2 trap tangga. Kiri: bar terbuka + awning krem & 4 stool kayu. Kanan: pintu kaca geser frame hitam + ruang duduk indoor.
+        </p>
+      </div>
+      <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
+        <div class="font-semibold">2. Courtyard & Kolam Refleksi</div>
+        <p class="text-[var(--muted-foreground)] mt-0.5">
+          Jalur dek kayu abu-abu dengan kolam batu kali di tengah, koral abu-abu gelap, stepping slab beton 100×100 cm, dan kursi lipat kayu.
+        </p>
+      </div>
+      <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
+        <div class="font-semibold">3. Meja Komunal & Bata Ekspos</div>
+        <p class="text-[var(--muted-foreground)] mt-0.5">
+          Meja beton ekspos panjang dengan lubang pohon Ketapang Kencana di tengah, dinding keliling bata merah ekspos, tanaman Calathea Lutea & lampu bola putih.
+        </p>
+      </div>
+      <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
+        <div class="font-semibold">4. Terasering Batu Kali 3 Tingkat</div>
+        <p class="text-[var(--muted-foreground)] mt-0.5">
+          Mempertahankan talud batu kali & tangga kanan eksisting, ditambah dudukan tribun beton charcoal, lampu LED strip tangga, dan akses dari parkir bawah.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const canvas = document.getElementById('scene3d');
+      const ctx = canvas.getContext('2d');
+
+      // Camera State (Spherical Orbit + Target Pan)
+      let cam = {
+        yaw: -0.60,
+        pitch: 0.46,
+        dist: 24.5,
+        target: { x: 0.2, y: 1.0, z: 0.0 }
+      };
+      let targetCam = {
+        yaw: cam.yaw,
+        pitch: cam.pitch,
+        dist: cam.dist,
+        target: { ...cam.target }
+      };
+
+      let dragMode = 'orbit'; // 'orbit' | 'pan'
+      let lightMode = 'golden'; // 'day' | 'golden' | 'night'
+      let autoRotate = false;
+      let showHotspots = true;
+      let isDragging = false;
+      let activeButton = 0;
+      let lastX = 0, lastY = 0;
+      let animTime = 0;
+
+      const CAM_PRESETS = {
+        overview: { yaw: -0.60, pitch: 0.46, dist: 24.5, target: { x: 0.2, y: 1.0, z: 0.0 } },
+        booth:    { yaw: -0.25, pitch: 0.24, dist: 12.0, target: { x: -1.2, y: 1.4, z: 0.8 } },
+        pond:     { yaw: -0.10, pitch: 0.45, dist: 14.5, target: { x: 0.0, y: 0.4, z: -1.5 } },
+        communal: { yaw: -0.95, pitch: 0.36, dist: 13.5, target: { x: 3.8, y: 0.8, z: -1.2 } },
+        terrace:  { yaw: -0.35, pitch: 0.34, dist: 17.5, target: { x: 0.0, y: 2.2, z: 5.0 } },
+        parking:  { yaw: -0.75, pitch: 0.40, dist: 18.0, target: { x: -1.5, y: -0.4, z: -6.5 } }
+      };
+
+      const HOTSPOTS = [
+        { id: 'booth',    label: '1. Container Booth',     x: -1.2, y: 3.3, z: 1.5 },
+        { id: 'pond',     label: '2. Kolam & Deck Kayu',   x: -0.3, y: 0.7, z: -1.8 },
+        { id: 'communal', label: '3. Meja Komunal Beton',  x: 4.1,  y: 1.5, z: -1.2 },
+        { id: 'terrace',  label: '4. Terasering 3 Tingkat',x: -0.5, y: 3.5, z: 5.5 },
+        { id: 'parking',  label: '5. Parkir & Tangga Masuk',x: -0.3, y: 0.2, z: -5.8 }
+      ];
+
+      // Scene Primitives
+      const boxes = [];
+      const cylinders = [];
+      const foliageClusters = [];
+      const globeLamps = [];
+      const ledStrips = [];
+      const groundShadows = [];
+      let clickableHotspotRects = [];
+
+      function addBox(x, y, z, w, h, d, color, opts = {}) {
+        boxes.push({ x, y, z, w, h, d, color, ...opts });
+        if (opts.castShadow) {
+          groundShadows.push({ x, y: opts.shadowY ?? 0.02, z, w: w * 1.08, d: d * 1.08 });
+        }
+      }
+
+      function addStool(x, baseY, z, h = 0.62, r = 0.22, topColor = '#c48f48', legColor = '#232323') {
+        cylinders.push({ x, y: baseY, z, h, r, topColor, legColor });
+      }
+
+      function addKetapangTree(x, baseY, z, height = 3.6, spread = 1.9) {
+        // Slender trunk
+        addBox(x, baseY + height * 0.45, z, 0.14, height * 0.9, 0.14, '#5c4938');
+        // Signature tiered horizontal pagoda-like foliage layers of Ketapang Kencana
+        const tiers = [
+          { y: baseY + height * 0.55, r: spread * 0.95, ry: 0.32 },
+          { y: baseY + height * 0.78, r: spread * 0.75, ry: 0.28 },
+          { y: baseY + height * 0.98, r: spread * 0.48, ry: 0.24 }
+        ];
+        for (const tier of tiers) {
+          foliageClusters.push({
+            kind: 'ketapang',
+            x, y: tier.y, z, r: tier.r, ry: tier.ry
+          });
+        }
+        groundShadows.push({ x, y: baseY + 0.02, z, w: spread * 1.5, d: spread * 1.5, round: true });
+      }
+
+      function addCalatheaRow(x1, z1, x2, z2, baseY, count) {
+        for (let i = 0; i < count; i++) {
+          const t = count === 1 ? 0.5 : i / (count - 1);
+          const px = x1 + (x2 - x1) * t;
+          const pz = z1 + (z2 - z1) * t;
+          foliageClusters.push({
+            kind: 'calathea',
+            x: px, y: baseY + 0.45, z: pz, r: 0.52, ry: 0.55
+          });
+        }
+      }
+
+      function addGlobeLamp(x, baseY, z, dirX = 0, dirZ = 1) {
+        // Matte black pole
+        addBox(x, baseY + 1.25, z, 0.08, 2.5, 0.08, '#1d1d1d');
+        // Curved arm & frosted white glass globe
+        const gx = x + dirX * 0.32;
+        const gz = z + dirZ * 0.32;
+        addBox((x + gx) / 2, baseY + 2.48, (z + gz) / 2, Math.abs(dirX) * 0.32 + 0.06, 0.06, Math.abs(dirZ) * 0.32 + 0.06, '#1d1d1d');
+        globeLamps.push({ x: gx, y: baseY + 2.32, z: gz, r: 0.19 });
+      }
+
+      function buildSite() {
+        boxes.length = 0;
+        cylinders.length = 0;
+        foliageClusters.length = 0;
+        globeLamps.length = 0;
+        ledStrips.length = 0;
+        groundShadows.length = 0;
+
+        // 0. SURROUNDING HILLSIDE TERRAIN PAD (Anchors the site so it never floats!)
+        addBox(0, -1.65, 0.5, 22.0, 0.5, 23.0, '#3a4434', { mat: 'terrain' });
+        // Front neighborhood road
+        addBox(0, -1.38, -9.2, 22.0, 0.12, 3.6, '#383b40');
+
+        // 1. LOWER PARKING AREA (EL -1.1m, Z: -7.5 to -4.6)
+        addBox(0, -1.25, -6.2, 13.6, 0.3, 3.4, '#686b6e', { mat: 'gravel' });
+        // Batu Kali Retaining Wall between Parking (-1.1m) and Main Courtyard (0.0m)
+        addBox(-3.6, -0.55, -4.45, 6.2, 1.1, 0.45, '#767167', { mat: 'stone' });
+        addBox(3.6, -0.55, -4.45, 6.2, 1.1, 0.45, '#767167', { mat: 'stone' });
+
+        // Parked Cars in Lower Parking (Realistic proportions)
+        // Dark Grey SUV on Right
+        addBox(3.6, -0.78, -6.3, 3.4, 0.65, 1.55, '#282c32', { castShadow: true, shadowY: -1.09 });
+        addBox(3.7, -0.28, -6.3, 1.9, 0.48, 1.38, '#363b42');
+        // Silver Sedan on Left
+        addBox(-4.2, -0.82, -6.3, 3.2, 0.58, 1.5, '#7a7e85', { castShadow: true, shadowY: -1.09 });
+        addBox(-4.1, -0.36, -6.3, 1.7, 0.44, 1.32, '#91969e');
+
+        // Wide Illuminated Entrance Stairs from Parking (-1.1m) to Courtyard (0.0m)
+        for (let i = 0; i < 5; i++) {
+          const sy = -0.98 + i * 0.22;
+          const sz = -5.15 + i * 0.30;
+          addBox(-0.2, sy, sz, 2.7, 0.22, 0.34, '#c8c4bc');
+          ledStrips.push({ x1: -1.48, x2: 1.08, y: sy + 0.11, z: sz - 0.17 });
+        }
+
+        // 2. MAIN COURTYARD (EL 0.0m, X: -6.5 to +6.5, Z: -4.4 to +2.8)
+        // Dark grey crushed gravel floor
+        addBox(0, -0.55, -0.8, 13.2, 1.1, 7.3, '#585c60', { mat: 'gravel' });
+
+        // Grey Wood-Plank Decking Central Walkway + Reflecting Pond
+        addBox(-0.2, 0.03, -2.0, 3.3, 0.06, 4.7, '#87827a', { mat: 'greywood' });
+        // Connecting grey wood walkway to right staircase
+        addBox(2.8, 0.03, -0.2, 3.2, 0.06, 1.4, '#87827a', { mat: 'greywood' });
+
+        // Minimalist Rectangular Reflecting Water Pond in Center of Grey Wood Deck
+        addBox(-0.2, 0.12, -2.1, 1.45, 0.18, 2.9, '#55585c'); // concrete pond rim
+        addBox(-0.2, 0.16, -2.1, 1.18, 0.14, 2.62, '#2d5a68', { mat: 'water' }); // animated water
+        // Natural Boulders inside Pond
+        addBox(-0.15, 0.34, -1.35, 0.45, 0.38, 0.42, '#8b877e');
+        addBox(-0.38, 0.26, -1.65, 0.32, 0.24, 0.30, '#75726a');
+        addBox(0.05, 0.24, -2.65, 0.36, 0.22, 0.34, '#827e75');
+
+        // Concrete Stepping Slabs (100x100cm light grey pavers)
+        const slabs = [
+          // Left seating zone slabs
+          [-4.8, -3.2], [-3.5, -3.2], [-4.8, -1.9], [-3.5, -1.9], [-2.4, -1.9],
+          // Right communal & lounge slabs
+          [2.0, -3.2], [2.0, -2.0], [2.0, -0.8],
+          [3.2, -3.2], [3.2, -2.0]
+        ];
+        for (const [sx, sz] of slabs) {
+          addBox(sx, 0.03, sz, 1.05, 0.06, 1.05, '#b8b9bc');
+        }
+
+        // 3. EXACT WHITE CORRUGATED CONTAINER CAFE BOOTH (From User's Photo!)
+        // Placed at X: -1.2 (spans X: -4.2 to +1.8), Z: +1.3 (spans Z: 0.0 to +2.5)
+        // Elevated Warm Teak Wood Deck Platform + Dark Charcoal Base
+        addBox(-1.2, 0.11, 1.1, 6.5, 0.22, 3.2, '#282a2e'); // dark charcoal plinth
+        addBox(-1.2, 0.24, 1.1, 6.4, 0.06, 3.1, '#c48845', { mat: 'teakdeck' }); // warm teak deck
+        // Two dark charcoal stepped risers at the front
+        addBox(-1.2, 0.07, -0.62, 2.8, 0.14, 0.32, '#2f3236');
+        addBox(-1.2, 0.15, -0.36, 2.8, 0.16, 0.30, '#383b40');
+
+        // Main 20ft Container Shell (Off-White / Warm Light Grey Corrugated Metal #EAE8E3)
+        // Container spans X: -4.1 to +1.7 (width 5.8m), Z: 0.2 to 2.4 (depth 2.2m), Y: 0.27 to 2.85
+        // Back wall
+        addBox(-1.2, 1.56, 2.32, 5.8, 2.58, 0.16, '#e6e4de', { mat: 'container' });
+        // Left end wall
+        addBox(-4.02, 1.56, 1.3, 0.16, 2.58, 2.2, '#e6e4de', { mat: 'container' });
+        // Right end wall
+        addBox(1.62, 1.56, 1.3, 0.16, 2.58, 2.2, '#e6e4de', { mat: 'container' });
+        // Roof slab
+        addBox(-1.2, 2.82, 1.3, 5.85, 0.14, 2.26, '#dedcd6', { castShadow: true, shadowY: 0.02 });
+        // Front top header beam (corrugated white strip above window & door)
+        addBox(-1.2, 2.58, 0.26, 5.8, 0.42, 0.14, '#eae8e2', { mat: 'container' });
+        // Center vertical divider pillar between Left Bar Window and Right Glass Door
+        addBox(-1.15, 1.48, 0.26, 0.22, 2.42, 0.16, '#eae8e2');
+
+        // Rooftop Sign Box ("Cenghar Express" white box with black frame on top-right of container)
+        addBox(0.55, 3.14, 0.45, 1.75, 0.48, 0.18, '#f7f5f0', {
+          isSign: true,
+          label: 'Cenghar Express',
+          signColor: '#1f1f1f',
+          signBg: '#f7f5f0'
+        });
+
+        // LEFT HALF OF CONTAINER (X: -4.0 to -1.25): Open Barista Service Counter
+        // Lower counter front wall (off-white vertical corrugated panels)
+        addBox(-2.62, 0.72, 0.30, 2.75, 0.90, 0.14, '#e8e6e0', { mat: 'container' });
+        // Cantilevered Warm Wood Bar Countertop Overhang
+        addBox(-2.62, 1.20, 0.14, 2.88, 0.09, 0.52, '#c88f4a');
+        // Warm Under-Counter LED Strip Light
+        ledStrips.push({ x1: -3.95, x2: -1.30, y: 1.13, z: 0.02 });
+        // 4 Round Wooden Bar Stools in front of the counter
+        addStool(-3.65, 0.27, -0.22, 0.62, 0.18);
+        addStool(-3.00, 0.27, -0.22, 0.62, 0.18);
+        addStool(-2.35, 0.27, -0.22, 0.62, 0.18);
+        addStool(-1.70, 0.27, -0.22, 0.62, 0.18);
+
+        // Interior of Left Barista Zone (Warm Wood Back Wall + Shelves + White Espresso Machine)
+        addBox(-2.62, 1.55, 2.15, 2.7, 2.4, 0.12, '#b87d3e'); // warm wood interior back panel
+        addBox(-2.62, 1.15, 1.75, 2.6, 0.85, 0.6, '#9c6830'); // back prep counter
+        // White & Chrome 2-Group Espresso Machine (matching photo!)
+        addBox(-3.15, 1.48, 0.38, 0.72, 0.46, 0.42, '#f0eee9');
+        addBox(-3.15, 1.52, 0.16, 0.58, 0.22, 0.06, '#b8bcc2'); // chrome grouphead
+        // Black Coffee Grinders next to Espresso Machine
+        addBox(-2.45, 1.48, 0.38, 0.18, 0.48, 0.22, '#222222');
+        addBox(-2.15, 1.46, 0.38, 0.18, 0.44, 0.22, '#e5e3dd');
+        // 2 Tiers of Warm Backlit Wooden Shelves stocked with Coffee Jars
+        addBox(-2.62, 1.92, 2.02, 2.5, 0.07, 0.28, '#875625');
+        addBox(-2.62, 2.28, 2.02, 2.5, 0.07, 0.28, '#875625');
+        ledStrips.push({ x1: -3.8, x2: -1.45, y: 1.88, z: 1.92 });
+        ledStrips.push({ x1: -3.8, x2: -1.45, y: 2.24, z: 1.92 });
+
+        // Warm Cream/Beige Retractable Fabric Awning Over Left Bar Window
+        addBox(-2.65, 2.46, -0.35, 3.0, 0.12, 1.35, '#eadbc2', { castShadow: true, shadowY: 0.27 });
+        addBox(-2.65, 2.36, -1.02, 3.0, 0.14, 0.05, '#dfcfb4'); // awning front valance flap
+
+        // RIGHT HALF OF CONTAINER (X: -1.05 to +1.55): Black-Framed Sliding Glass Door & Indoor Nook
+        // Warm-lit indoor floor & wood walls
+        addBox(0.25, 1.55, 2.15, 2.5, 2.4, 0.12, '#c79355');
+        // Indoor small wooden cafe table & bench inside the glass room
+        addBox(0.55, 0.72, 1.35, 0.9, 0.7, 0.65, '#8f5e2c');
+        addBox(1.15, 1.85, 1.35, 0.28, 0.07, 1.4, '#7d5022'); // right wall shelf
+        // Black Menu & Brand Panel on Left Glass Leaf ("CENGHAR EXPRESS")
+        addBox(-0.68, 0.85, 0.24, 0.78, 1.15, 0.08, '#1a1c1e', {
+          isSign: true,
+          label: 'CENGHAR EXPRESS',
+          signColor: '#FAF5EC'
+        });
+        // Black-Framed Chalkboard Menu above the brand panel
+        addBox(-0.68, 1.88, 0.24, 0.72, 0.78, 0.06, '#222528');
+        // Translucent Sliding Glass Doors (2 panels) with Matte Black Frames
+        addBox(0.10, 1.34, 0.24, 0.82, 2.14, 0.06, '#8ab4c4', { mat: 'glass' });
+        addBox(0.92, 1.34, 0.24, 0.82, 2.14, 0.06, '#8ab4c4', { mat: 'glass' });
+        // Black Aluminum Door Frame Bars
+        addBox(-1.08, 1.34, 0.23, 0.07, 2.18, 0.09, '#181818');
+        addBox(-0.28, 1.34, 0.23, 0.07, 2.18, 0.09, '#181818');
+        addBox(0.52,  1.34, 0.23, 0.07, 2.18, 0.09, '#181818');
+        addBox(1.34,  1.34, 0.23, 0.07, 2.18, 0.09, '#181818');
+        addBox(0.13,  2.40, 0.23, 2.50, 0.08, 0.09, '#181818');
+
+        // 4. COURTYARD FURNITURE (Lurra Reference Style)
+        // Left Courtyard: Wooden Folding Cafe Tables & Chairs on Concrete Slabs
+        const leftTables = [[-4.15, -3.2], [-4.15, -1.9]];
+        for (const [tx, tz] of leftTables) {
+          addBox(tx, 0.40, tz, 0.10, 0.74, 0.10, '#262626');
+          addBox(tx, 0.78, tz, 0.78, 0.06, 0.78, '#b88144', { castShadow: true, shadowY: 0.06 });
+          // Folding wooden chairs
+          addBox(tx - 0.62, 0.42, tz, 0.42, 0.76, 0.42, '#a67238');
+          addBox(tx + 0.62, 0.42, tz, 0.42, 0.76, 0.42, '#a67238');
+        }
+
+        // Right Courtyard: Long Charcoal Concrete Communal Table with Tree Cutout!
+        // Spans Z: -3.3 to +0.3 at X: +4.1
+        addBox(4.1, 0.38, -2.7, 0.95, 0.72, 0.22, '#3d4045'); // front concrete pedestal leg
+        addBox(4.1, 0.38, -0.3, 0.95, 0.72, 0.22, '#3d4045'); // back concrete pedestal leg
+        addBox(4.1, 0.78, -1.5, 1.18, 0.12, 3.6, '#50545a', { castShadow: true, shadowY: 0.02 }); // concrete tabletop
+        // Dark tree hole cutout in middle of communal table + Ketapang Kencana tree growing through it!
+        addBox(4.1, 0.85, -1.3, 0.42, 0.03, 0.42, '#282a2c');
+        addKetapangTree(4.1, 0.0, -1.3, 4.2, 2.1);
+
+        // Round Wood-Top Industrial Bar Stools around Communal Table
+        for (const sz of [-2.8, -2.0, -0.7, 0.0]) {
+          addStool(3.25, 0.03, sz, 0.54, 0.20);
+          addStool(4.95, 0.03, sz, 0.54, 0.20);
+        }
+
+        // 5. EXPOSED RED BRICK PERIMETER WALLS (Bata Merah Ekspos + Charcoal Coping)
+        // Left Courtyard Brick Wall
+        addBox(-6.55, 1.15, -0.8, 0.28, 2.3, 7.4, '#a84e34', { mat: 'brick' });
+        addBox(-6.55, 2.34, -0.8, 0.34, 0.12, 7.4, '#2d3033'); // charcoal coping
+        // Front Low Brick Planter DivideWalls flanking the entrance
+        addBox(-4.0, 0.55, -4.35, 4.9, 1.1, 0.26, '#a84e34', { mat: 'brick' });
+        addBox(-1.6, 0.65, -3.55, 0.26, 1.1, 1.6, '#a84e34', { mat: 'brick' });
+        addBox(3.8,  0.55, -4.35, 5.2, 1.1, 0.26, '#a84e34', { mat: 'brick' });
+        addBox(1.25, 0.65, -3.55, 0.26, 1.1, 1.6, '#a84e34', { mat: 'brick' });
+        // Right Courtyard Brick Wall
+        addBox(6.55, 1.15, -0.8, 0.28, 2.3, 7.4, '#a84e34', { mat: 'brick' });
+        addBox(6.55, 2.34, -0.8, 0.34, 0.12, 7.4, '#2d3033');
+
+        // 6. 3-TIER RIVER STONE (BATU KALI) TERRACED AMPHITHEATER (Z: +2.8 to +8.4)
+        // Strictly preserving existing batu kali retaining walls & right-side staircase (X: +4.6 to +6.4)
+        // Tier 1 (EL +1.0m, Z: 2.8 to 4.6)
+        addBox(-0.9, 0.50, 3.7, 10.8, 1.0, 1.8, '#78736a', { mat: 'stone' });
+        addBox(-0.9, 1.04, 3.7, 10.8, 0.10, 1.85, '#3b3e42'); // dark charcoal concrete deck
+        addBox(-0.9, 1.24, 4.2, 9.6, 0.32, 0.60, '#2e3136'); // dark amphitheater bench
+        ledStrips.push({ x1: -5.6, x2: 3.8, y: 0.98, z: 2.78 });
+
+        // Tier 2 (EL +2.0m, Z: 4.6 to 6.4)
+        addBox(-0.9, 1.00, 5.5, 10.8, 2.0, 1.8, '#736e65', { mat: 'stone' });
+        addBox(-0.9, 2.04, 5.5, 10.8, 0.10, 1.85, '#3b3e42');
+        addBox(-0.9, 2.24, 6.0, 9.6, 0.32, 0.60, '#2e3136');
+        ledStrips.push({ x1: -5.6, x2: 3.8, y: 1.98, z: 4.58 });
+
+        // Tier 3 (EL +3.0m, Z: 6.4 to 8.2)
+        addBox(-0.9, 1.50, 7.3, 10.8, 3.0, 1.8, '#6e6960', { mat: 'stone' });
+        addBox(-0.9, 3.04, 7.3, 10.8, 0.10, 1.85, '#3b3e42');
+        addBox(-0.9, 3.24, 7.8, 9.6, 0.32, 0.60, '#2e3136');
+        ledStrips.push({ x1: -5.6, x2: 3.8, y: 2.98, z: 6.38 });
+
+        // Upper Stepped Exposed Red Brick Boundary Walls around Terraces
+        addBox(0.0, 4.25, 8.35, 13.4, 2.4, 0.28, '#a84e34', { mat: 'brick' });
+        addBox(0.0, 5.48, 8.35, 13.5, 0.12, 0.34, '#2d3033'); // charcoal coping
+        // Matte Black Sign Panel on Back Brick Wall
+        addBox(-0.9, 4.35, 8.18, 3.4, 0.68, 0.08, '#1e2022', {
+          isSign: true,
+          label: 'Cenghar Express',
+          signColor: '#FAF5EC'
+        });
+        // Stepped Left & Right Brick Walls for Terraces
+        addBox(-6.55, 2.6, 4.6, 0.28, 2.6, 3.6, '#a84e34', { mat: 'brick' });
+        addBox(-6.55, 3.8, 7.3, 0.28, 2.8, 2.0, '#a84e34', { mat: 'brick' });
+        addBox(6.55,  2.6, 4.6, 0.28, 2.6, 3.6, '#a84e34', { mat: 'brick' });
+        addBox(6.55,  3.8, 7.3, 0.28, 2.8, 2.0, '#a84e34', { mat: 'brick' });
+
+        // Right-Side Stepped Staircase (X: +4.6 to +6.4, Z: +2.6 to +8.0)
+        const stepsCount = 12;
+        for (let i = 0; i < stepsCount; i++) {
+          const t = i / (stepsCount - 1);
+          const sy = 0.25 + t * 2.80;
+          const sz = 2.75 + t * 5.1;
+          addBox(5.45, sy / 2, sz, 1.75, sy, 0.48, '#b4b0a8');
+          ledStrips.push({ x1: 4.62, x2: 6.28, y: sy + 0.02, z: sz - 0.23 });
+        }
+
+        // 7. LUSH TROPICAL LANDSCAPING (Calathea Lutea Borders + Ketapang Kencana Trees)
+        addCalatheaRow(-5.9, -3.6, -5.9, 0.4, 0.0, 7);   // Left brick wall border
+        addCalatheaRow(-5.5, -4.75, -2.1, -4.75, -0.8, 6); // Front-left entrance border
+        addCalatheaRow(1.6, -4.75, 5.5, -4.75, -0.8, 6);   // Front-right entrance border
+        addCalatheaRow(5.9, -3.6, 5.9, 1.2, 0.0, 8);     // Right brick wall border
+        addCalatheaRow(-5.2, 7.9, 3.2, 7.9, 3.1, 8);     // Top terrace back border
+
+        // Additional Ketapang Kencana Shade Trees
+        addKetapangTree(-5.2, 0.0, -3.5, 3.5, 1.6);
+        addKetapangTree(2.8, 2.0, 5.2, 3.8, 1.8);
+        addKetapangTree(-4.2, 3.0, 7.1, 3.6, 1.7);
+
+        // 8. BLACK POLE GLOBE GARDEN LAMPS (Frosted White Glass Spheres)
+        addGlobeLamp(-1.6, 0.0, -3.8, 0.3, 0.8);
+        addGlobeLamp(1.25, 0.0, -3.8, -0.3, 0.8);
+        addGlobeLamp(-5.8, 0.0, -2.2, 0.8, 0.0);
+        addGlobeLamp(5.8, 0.0, -2.2, -0.8, 0.0);
+        addGlobeLamp(4.4, 1.0, 3.4, -0.8, 0.0);
+        addGlobeLamp(4.4, 2.8, 6.8, -0.8, 0.0);
+      }
+
+      // Camera Basis (Guaranteed Above Ground Looking Down)
+      function getCameraBasis() {
+        const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+        const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+
+        const pos = {
+          x: cam.target.x + cam.dist * cp * sy,
+          y: cam.target.y + cam.dist * sp,
+          z: cam.target.z - cam.dist * cp * cy
+        };
+        const F = { x: -cp * sy, y: -sp, z: cp * cy };
+        const R = { x: cy, y: 0, z: sy };
+        const U = { x: -sp * sy, y: cp, z: sp * cy };
+        return { pos, F, R, U };
+      }
+
+      function project(x, y, z, width, height, basis) {
+        const vx = x - basis.pos.x;
+        const vy = y - basis.pos.y;
+        const vz = z - basis.pos.z;
+
+        const camX = vx * basis.R.x + vy * basis.R.y + vz * basis.R.z;
+        const camY = vx * basis.U.x + vy * basis.U.y + vz * basis.U.z;
+        const camZ = vx * basis.F.x + vy * basis.F.y + vz * basis.F.z;
+
+        const fov = Math.min(width, height) * 1.18;
+        if (camZ <= 0.4) return null;
+        const scale = fov / camZ;
+        return {
+          sx: width / 2 + camX * scale,
+          sy: height / 2 - camY * scale,
+          depth: camZ,
+          scale
+        };
+      }
+
+      function hexToRgb(hex) {
+        const v = parseInt(hex.slice(1), 16);
+        return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+      }
+
+      function shadeColor(hex, intensity, tint, alpha = 1) {
+        const [r, g, b] = hexToRgb(hex);
+        const nr = Math.min(255, Math.max(0, Math.round(r * intensity * tint[0])));
+        const ng = Math.min(255, Math.max(0, Math.round(g * intensity * tint[1])));
+        const nb = Math.min(255, Math.max(0, Math.round(b * intensity * tint[2])));
+        return alpha < 1 ? `rgba(${nr},${ng},${nb},${alpha})` : `rgb(${nr},${ng},${nb})`;
+      }
+
+      function getLightingConfig() {
+        if (lightMode === 'day') {
+          return {
+            skyTop: '#6aa4d9',
+            skyBottom: '#d9e8f5',
+            sun: { x: 0.48, y: 0.80, z: -0.36 },
+            ambient: 0.62,
+            tint: [1.0, 1.0, 1.0],
+            lightsOn: false
+          };
+        }
+        if (lightMode === 'night') {
+          return {
+            skyTop: '#0b1324',
+            skyBottom: '#1c2b48',
+            sun: { x: -0.35, y: 0.75, z: -0.5 },
+            ambient: 0.36,
+            tint: [0.76, 0.84, 1.04],
+            lightsOn: true
+          };
+        }
+        // Golden hour (default)
+        return {
+          skyTop: '#4a6891',
+          skyBottom: '#ebba88',
+          sun: { x: -0.65, y: 0.54, z: -0.52 },
+          ambient: 0.52,
+          tint: [1.06, 0.96, 0.88],
+          lightsOn: true
+        };
+      }
+
+      const FACES = [
+        { idx: [0, 1, 2, 3], n: [0, 0, -1] }, // front (-z)
+        { idx: [5, 4, 7, 6], n: [0, 0, 1]  }, // back (+z)
+        { idx: [4, 0, 3, 7], n: [-1, 0, 0] }, // left (-x)
+        { idx: [1, 5, 6, 2], n: [1, 0, 0]  }, // right (+x)
+        { idx: [3, 2, 6, 7], n: [0, 1, 0]  }, // top (+y)
+        { idx: [4, 5, 1, 0], n: [0, -1, 0] }  // bottom (-y)
+      ];
+
+      // Draw surface material detail lines (corrugation ribs, brick courses, wood planks, water ripples)
+      function drawSurfaceDetail(pts, mat, faceNormal, light) {
+        if (!mat) return;
+        ctx.save();
+        // Clip to polygon
+        ctx.beginPath();
+        ctx.moveTo(pts[0].sx, pts[0].sy);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].sx, pts[i].sy);
+        ctx.closePath();
+        ctx.clip();
+
+        if (mat === 'container' && faceNormal[1] === 0) {
+          // Vertical corrugated metal ribs
+          ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+          ctx.lineWidth = 1;
+          const ribs = 16;
+          for (let i = 1; i < ribs; i++) {
+            const t = i / ribs;
+            const xTop = pts[3].sx + (pts[2].sx - pts[3].sx) * t;
+            const yTop = pts[3].sy + (pts[2].sy - pts[3].sy) * t;
+            const xBot = pts[0].sx + (pts[1].sx - pts[0].sx) * t;
+            const yBot = pts[0].sy + (pts[1].sy - pts[0].sy) * t;
+            ctx.beginPath();
+            ctx.moveTo(xTop, yTop);
+            ctx.lineTo(xBot, yBot);
+            ctx.stroke();
+          }
+        } else if (mat === 'brick' && faceNormal[1] === 0) {
+          // Horizontal terracotta brick mortar courses
+          ctx.strokeStyle = 'rgba(235, 215, 195, 0.22)';
+          ctx.lineWidth = 0.8;
+          const rows = 7;
+          for (let i = 1; i < rows; i++) {
+            const t = i / rows;
+            const xL = pts[0].sx + (pts[3].sx - pts[0].sx) * t;
+            const yL = pts[0].sy + (pts[3].sy - pts[0].sy) * t;
+            const xR = pts[1].sx + (pts[2].sx - pts[1].sx) * t;
+            const yR = pts[1].sy + (pts[2].sy - pts[1].sy) * t;
+            ctx.beginPath();
+            ctx.moveTo(xL, yL);
+            ctx.lineTo(xR, yR);
+            ctx.stroke();
+          }
+        } else if (mat === 'stone' && faceNormal[1] === 0) {
+          // River stone (batu kali) organic mortar texture lines
+          ctx.strokeStyle = 'rgba(30, 28, 25, 0.28)';
+          ctx.lineWidth = 1.1;
+          const rows = 4;
+          for (let i = 1; i < rows; i++) {
+            const t = i / rows;
+            const xL = pts[0].sx + (pts[3].sx - pts[0].sx) * t;
+            const yL = pts[0].sy + (pts[3].sy - pts[0].sy) * t;
+            const xR = pts[1].sx + (pts[2].sx - pts[1].sx) * t;
+            const yR = pts[1].sy + (pts[2].sy - pts[1].sy) * t;
+            ctx.beginPath();
+            ctx.moveTo(xL, yL);
+            ctx.lineTo(xR, yR);
+            ctx.stroke();
+          }
+        } else if ((mat === 'greywood' || mat === 'teakdeck') && faceNormal[1] === 1) {
+          // Wood deck plank lines
+          ctx.strokeStyle = 'rgba(0,0,0,0.16)';
+          ctx.lineWidth = 0.8;
+          const planks = 10;
+          for (let i = 1; i < planks; i++) {
+            const t = i / planks;
+            const x1 = pts[0].sx + (pts[1].sx - pts[0].sx) * t;
+            const y1 = pts[0].sy + (pts[1].sy - pts[0].sy) * t;
+            const x2 = pts[3].sx + (pts[2].sx - pts[3].sx) * t;
+            const y2 = pts[3].sy + (pts[2].sy - pts[3].sy) * t;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+        } else if (mat === 'water' && faceNormal[1] === 1) {
+          // Shimmering water highlights + underwater glow at night
+          if (light.lightsOn) {
+            ctx.fillStyle = 'rgba(120, 225, 245, 0.28)';
+            ctx.fill();
+          }
+          ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+          ctx.lineWidth = 1.2;
+          for (let i = 1; i <= 4; i++) {
+            const t = ((i * 0.22 + animTime * 0.004) % 0.85) + 0.08;
+            const x1 = pts[0].sx + (pts[3].sx - pts[0].sx) * t;
+            const y1 = pts[0].sy + (pts[3].sy - pts[0].sy) * t;
+            const x2 = pts[1].sx + (pts[2].sx - pts[1].sx) * t;
+            const y2 = pts[1].sy + (pts[2].sy - pts[1].sy) * t;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+
+      // Draw Blender-style X/Y/Z Orientation Gizmo in Top-Right Corner
+      function drawOrientationGizmo(W, basis) {
+        const gx = W - 46, gy = 46, len = 24;
+        const axes = [
+          { label: 'X', v: [1, 0, 0], color: '#e05260' },
+          { label: 'Y', v: [0, 1, 0], color: '#68c758' },
+          { label: 'Z', v: [0, 0, 1], color: '#4f97e8' }
+        ];
+        ctx.save();
+        ctx.fillStyle = 'rgba(20, 18, 16, 0.55)';
+        ctx.beginPath();
+        ctx.arc(gx, gy, 32, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (const ax of axes) {
+          const sx = gx + (ax.v[0] * basis.R.x + ax.v[1] * basis.R.y + ax.v[2] * basis.R.z) * len;
+          const sy = gy - (ax.v[0] * basis.U.x + ax.v[1] * basis.U.y + ax.v[2] * basis.U.z) * len;
+          ctx.strokeStyle = ax.color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(gx, gy);
+          ctx.lineTo(sx, sy);
+          ctx.stroke();
+
+          ctx.fillStyle = ax.color;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 6, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 8px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(ax.label, sx, sy);
+        }
+        ctx.restore();
+      }
+
+      function render() {
+        animTime++;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+          canvas.width = Math.round(rect.width * dpr);
+          canvas.height = Math.round(rect.height * dpr);
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const W = rect.width;
+        const H = rect.height;
+
+        const light = getLightingConfig();
+        const basis = getCameraBasis();
+
+        // Sky Gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, light.skyTop);
+        grad.addColorStop(1, light.skyBottom);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        const drawList = [];
+
+        // 0. Soft Ground Shadows
+        for (const sh of groundShadows) {
+          const hw = sh.w / 2, hd = sh.d / 2;
+          const ox = 0.25, oz = -0.22; // sun shadow offset
+          const pts = [
+            project(sh.x - hw + ox, sh.y, sh.z - hd + oz, W, H, basis),
+            project(sh.x + hw + ox, sh.y, sh.z - hd + oz, W, H, basis),
+            project(sh.x + hw + ox, sh.y, sh.z + hd + oz, W, H, basis),
+            project(sh.x - hw + ox, sh.y, sh.z + hd + oz, W, H, basis)
+          ];
+          if (pts.some(p => !p)) continue;
+          const avgDepth = (pts[0].depth + pts[1].depth + pts[2].depth + pts[3].depth) / 4 + 0.15;
+          drawList.push({ type: 'shadow', depth: avgDepth, pts });
+        }
+
+        // 1. 3D Boxes with Exact View-Space Backface Culling & Material Shading
+        for (const b of boxes) {
+          const hw = b.w / 2, hh = b.h / 2, hd = b.d / 2;
+          const verts = [
+            [b.x - hw, b.y - hh, b.z - hd],
+            [b.x + hw, b.y - hh, b.z - hd],
+            [b.x + hw, b.y + hh, b.z - hd],
+            [b.x - hw, b.y + hh, b.z - hd],
+            [b.x - hw, b.y - hh, b.z + hd],
+            [b.x + hw, b.y - hh, b.z + hd],
+            [b.x + hw, b.y + hh, b.z + hd],
+            [b.x - hw, b.y + hh, b.z + hd]
+          ];
+          const pVerts = verts.map(v => project(v[0], v[1], v[2], W, H, basis));
+          if (pVerts.some(p => !p)) continue;
+
+          for (const f of FACES) {
+            const fcX = b.x + f.n[0] * hw;
+            const fcY = b.y + f.n[1] * hh;
+            const fcZ = b.z + f.n[2] * hd;
+            const facing = f.n[0] * (basis.pos.x - fcX) + f.n[1] * (basis.pos.y - fcY) + f.n[2] * (basis.pos.z - fcZ);
+            if (facing <= 0) continue;
+
+            const pts = f.idx.map(i => pVerts[i]);
+            const avgDepth = (pts[0].depth + pts[1].depth + pts[2].depth + pts[3].depth) / 4;
+            const dot = Math.max(0, f.n[0] * light.sun.x + f.n[1] * light.sun.y + f.n[2] * light.sun.z);
+            const intensity = light.ambient + dot * (1 - light.ambient) * 0.88;
+            const alpha = b.mat === 'glass' ? 0.42 : 1.0;
+
+            drawList.push({
+              type: 'poly',
+              depth: avgDepth - (b.mat === 'glass' ? 0.12 : 0),
+              pts,
+              fill: shadeColor(b.color, intensity, light.tint, alpha),
+              stroke: b.mat === 'terrain' ? 'transparent' : (lightMode === 'night' ? 'rgba(12,16,26,0.38)' : 'rgba(32,28,24,0.16)'),
+              mat: b.mat,
+              faceNormal: f.n,
+              sign: b.isSign && (f.n[2] === -1 || f.n[2] === 1) ? { label: b.label, color: b.signColor } : null
+            });
+          }
+        }
+
+        // 2. Round Wooden Bar Stools (3D Cylinders + Angled Legs)
+        for (const s of cylinders) {
+          const pTop = project(s.x, s.y + s.h, s.z, W, H, basis);
+          const pBot = project(s.x, s.y, s.z, W, H, basis);
+          if (!pTop || !pBot) continue;
+          drawList.push({
+            type: 'stool',
+            depth: pTop.depth,
+            pTop, pBot,
+            rx: Math.max(3, s.r * pTop.scale),
+            ry: Math.max(1.8, s.r * pTop.scale * Math.max(0.25, Math.sin(cam.pitch))),
+            topColor: s.topColor,
+            legColor: s.legColor
+          });
+        }
+
+        // 3. Organic Tropical Foliage (Ketapang Kencana Canopy Layers & Calathea Lutea Leaves)
+        for (const fl of foliageClusters) {
+          const p = project(fl.x, fl.y, fl.z, W, H, basis);
+          if (!p) continue;
+          drawList.push({
+            type: 'foliage',
+            depth: p.depth,
+            kind: fl.kind,
+            sx: p.sx,
+            sy: p.sy,
+            rx: fl.r * p.scale * 0.72,
+            ry: fl.ry * p.scale * 0.72
+          });
+        }
+
+        // 4. Frosted White Glass Globe Lamps
+        for (const gl of globeLamps) {
+          const p = project(gl.x, gl.y, gl.z, W, H, basis);
+          if (!p) continue;
+          drawList.push({
+            type: 'globe',
+            depth: p.depth - 0.08,
+            sx: p.sx,
+            sy: p.sy,
+            r: Math.max(3.5, gl.r * p.scale),
+            on: light.lightsOn
+          });
+        }
+
+        // 5. Warm LED Strips (Under-counter bar glow, interior shelves, terrace steps)
+        for (const ls of ledStrips) {
+          const p1 = project(ls.x1, ls.y, ls.z, W, H, basis);
+          const p2 = project(ls.x2, ls.y, ls.z, W, H, basis);
+          if (!p1 || !p2) continue;
+          drawList.push({
+            type: 'led',
+            depth: (p1.depth + p2.depth) / 2 - 0.1,
+            p1, p2,
+            strong: light.lightsOn
+          });
+        }
+
+        // Painter's depth sort
+        drawList.sort((a, b) => b.depth - a.depth);
+
+        // Execute Draw Pass
+        for (const item of drawList) {
+          if (item.type === 'shadow') {
+            ctx.beginPath();
+            ctx.moveTo(item.pts[0].sx, item.pts[0].sy);
+            for (let i = 1; i < item.pts.length; i++) ctx.lineTo(item.pts[i].sx, item.pts[i].sy);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(15, 18, 22, 0.22)';
+            ctx.fill();
+          } else if (item.type === 'poly') {
+            ctx.beginPath();
+            ctx.moveTo(item.pts[0].sx, item.pts[0].sy);
+            for (let i = 1; i < item.pts.length; i++) ctx.lineTo(item.pts[i].sx, item.pts[i].sy);
+            ctx.closePath();
+            ctx.fillStyle = item.fill;
+            ctx.fill();
+
+            if (item.mat) {
+              drawSurfaceDetail(item.pts, item.mat, item.faceNormal, light);
+            }
+
+            if (item.stroke !== 'transparent') {
+              ctx.strokeStyle = item.stroke;
+              ctx.lineWidth = 0.7;
+              ctx.stroke();
+            }
+
+            if (item.sign) {
+              const cx = (item.pts[0].sx + item.pts[2].sx) / 2;
+              const cy = (item.pts[0].sy + item.pts[2].sy) / 2;
+              ctx.save();
+              ctx.font = 'bold 10px Georgia, serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillStyle = item.sign.color || '#FAF5EC';
+              ctx.fillText(item.sign.label, cx, cy);
+              ctx.restore();
+            }
+          } else if (item.type === 'stool') {
+            // Stool legs
+            ctx.strokeStyle = item.legColor;
+            ctx.lineWidth = 1.6;
+            const spread = item.rx * 0.75;
+            for (const dx of [-spread, 0, spread]) {
+              ctx.beginPath();
+              ctx.moveTo(item.pTop.sx + dx * 0.4, item.pTop.sy);
+              ctx.lineTo(item.pBot.sx + dx, item.pBot.sy);
+              ctx.stroke();
+            }
+            // Round wooden seat top
+            ctx.fillStyle = item.topColor;
+            ctx.beginPath();
+            ctx.ellipse(item.pTop.sx, item.pTop.sy, item.rx, item.ry, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          } else if (item.type === 'foliage') {
+            if (item.kind === 'ketapang') {
+              // Layered horizontal pagoda canopy clusters
+              const cDark = lightMode === 'night' ? '#1c3625' : '#2d5a34';
+              const cMid  = lightMode === 'night' ? '#274a33' : '#437c49';
+              const cLite = lightMode === 'night' ? '#325c40' : '#5e9c5e';
+              const puffs = [
+                { dx: -0.45, dy: 0.05, s: 0.65, c: cDark },
+                { dx: 0.45,  dy: 0.05, s: 0.65, c: cDark },
+                { dx: 0,     dy: 0.1,  s: 0.75, c: cMid },
+                { dx: -0.22, dy: -0.15,s: 0.60, c: cLite },
+                { dx: 0.22,  dy: -0.15,s: 0.58, c: cLite }
+              ];
+              for (const pf of puffs) {
+                ctx.fillStyle = pf.c;
+                ctx.beginPath();
+                ctx.ellipse(
+                  item.sx + pf.dx * item.rx,
+                  item.sy + pf.dy * item.ry,
+                  item.rx * pf.s,
+                  item.ry * pf.s,
+                  0, 0, Math.PI * 2
+                );
+                ctx.fill();
+              }
+            } else {
+              // Calathea Lutea broad upright tropical leaves
+              const leafColors = lightMode === 'night'
+                ? ['#1e3d28', '#295236', '#336341']
+                : ['#326337', '#468247', '#5da158'];
+              const angles = [-0.55, -0.25, 0, 0.25, 0.55];
+              angles.forEach((ang, idx) => {
+                ctx.save();
+                ctx.translate(item.sx, item.sy + item.ry * 0.3);
+                ctx.rotate(ang);
+                ctx.fillStyle = leafColors[idx % leafColors.length];
+                ctx.beginPath();
+                ctx.ellipse(0, -item.ry * 0.55, item.rx * 0.34, item.ry * 0.62, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+              });
+            }
+          } else if (item.type === 'globe') {
+            if (item.on) {
+              const g = ctx.createRadialGradient(item.sx, item.sy, 0, item.sx, item.sy, item.r * 3.8);
+              g.addColorStop(0, 'rgba(255, 240, 185, 0.95)');
+              g.addColorStop(0.45, 'rgba(255, 200, 100, 0.38)');
+              g.addColorStop(1, 'rgba(255, 190, 80, 0)');
+              ctx.fillStyle = g;
+              ctx.beginPath();
+              ctx.arc(item.sx, item.sy, item.r * 3.8, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.fillStyle = item.on ? '#fff9e6' : '#f0f2f5';
+            ctx.beginPath();
+            ctx.arc(item.sx, item.sy, item.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          } else if (item.type === 'led') {
+            ctx.save();
+            ctx.strokeStyle = item.strong ? 'rgba(255, 206, 105, 0.95)' : 'rgba(255, 206, 105, 0.65)';
+            ctx.lineWidth = item.strong ? 2.6 : 1.8;
+            if (item.strong) {
+              ctx.shadowColor = '#ffb84d';
+              ctx.shadowBlur = 8;
+            }
+            ctx.beginPath();
+            ctx.moveTo(item.p1.sx, item.p1.sy);
+            ctx.lineTo(item.p2.sx, item.p2.sy);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+
+        // Draw Interactive 3D Hotspot Labels
+        clickableHotspotRects = [];
+        if (showHotspots) {
+          for (const hs of HOTSPOTS) {
+            const p = project(hs.x, hs.y, hs.z, W, H, basis);
+            if (!p) continue;
+            ctx.save();
+            ctx.font = '600 11px system-ui, sans-serif';
+            const tw = ctx.measureText(hs.label).width;
+            const bw = tw + 16, bh = 22;
+            const bx = p.sx - bw / 2, by = p.sy - bh - 8;
+
+            // Pin stem
+            ctx.strokeStyle = 'rgba(250,245,236,0.75)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(p.sx, p.sy);
+            ctx.lineTo(p.sx, by + bh);
+            ctx.stroke();
+
+            // Pin badge
+            ctx.fillStyle = 'rgba(24, 22, 20, 0.82)';
+            ctx.strokeStyle = '#8B1E2D';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.roundRect(bx, by, bw, bh, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#FAF5EC';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(hs.label, p.sx, by + bh / 2);
+            ctx.restore();
+
+            clickableHotspotRects.push({ id: hs.id, x: bx, y: by, w: bw, h: bh });
+          }
+        }
+
+        // Draw Top-Right 3D Axis Orientation Gizmo
+        drawOrientationGizmo(W, basis);
+      }
+
+      // Pan helper in camera plane
+      function panCamera(dxScreen, dyScreen) {
+        const basis = getCameraBasis();
+        const panSpeed = cam.dist * 0.0016;
+        // Move target along camera Right (R) and horizontal Forward projection
+        const fwdXZLen = Math.hypot(basis.F.x, basis.F.z) || 1;
+        const fwdX = basis.F.x / fwdXZLen;
+        const fwdZ = basis.F.z / fwdXZLen;
+
+        targetCam.target.x = Math.max(-7, Math.min(7, targetCam.target.x - dxScreen * basis.R.x * panSpeed + dyScreen * fwdX * panSpeed));
+        targetCam.target.z = Math.max(-8, Math.min(8, targetCam.target.z - dxScreen * basis.R.z * panSpeed + dyScreen * fwdZ * panSpeed));
+      }
+
+      // Animation Loop
+      const yawSlider = document.getElementById('yawSlider');
+      const angleReadout = document.getElementById('angleReadout');
+
+      function updateYawUI() {
+        let deg = Math.round((targetCam.yaw * 180) / Math.PI) % 360;
+        if (deg > 180) deg -= 360;
+        if (deg < -180) deg += 360;
+        yawSlider.value = deg;
+        const normDeg = ((deg % 360) + 360) % 360;
+        angleReadout.textContent = normDeg + '°';
+      }
+
+      function tick() {
+        if (autoRotate && !isDragging) {
+          targetCam.yaw += 0.0045;
+          updateYawUI();
+        }
+        const lerp = 0.12;
+        cam.yaw += (targetCam.yaw - cam.yaw) * lerp;
+        cam.pitch += (targetCam.pitch - cam.pitch) * lerp;
+        cam.dist += (targetCam.dist - cam.dist) * lerp;
+        cam.target.x += (targetCam.target.x - cam.target.x) * lerp;
+        cam.target.y += (targetCam.target.y - cam.target.y) * lerp;
+        cam.target.z += (targetCam.target.z - cam.target.z) * lerp;
+
+        render();
+        requestAnimationFrame(tick);
+      }
+
+      // Mouse & Touch Drag Controls (Orbit 360° + Pan Geser)
+      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      canvas.addEventListener('pointerdown', (e) => {
+        // Check if user clicked a 3D hotspot pill
+        const rect = canvas.getBoundingClientRect();
+        const cx = e.clientX - rect.left;
+        const cy = e.clientY - rect.top;
+        for (const hs of clickableHotspotRects) {
+          if (cx >= hs.x && cx <= hs.x + hs.w && cy >= hs.y && cy <= hs.y + hs.h) {
+            setPreset(hs.id);
+            return;
+          }
+        }
+
+        isDragging = true;
+        activeButton = e.button;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        canvas.setPointerCapture(e.pointerId);
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        const isPanAction = dragMode === 'pan' || activeButton === 2 || e.shiftKey;
+        if (isPanAction) {
+          panCamera(dx, dy);
+        } else {
+          targetCam.yaw -= dx * 0.0085;
+          // Strictly clamp pitch between 10° (0.18 rad) and 80° (1.40 rad) so camera NEVER goes below ground!
+          targetCam.pitch = Math.max(0.18, Math.min(1.40, targetCam.pitch + dy * 0.007));
+          updateYawUI();
+        }
+      });
+
+      canvas.addEventListener('pointerup', () => { isDragging = false; });
+      canvas.addEventListener('pointercancel', () => { isDragging = false; });
+
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        targetCam.dist = Math.max(8.5, Math.min(36, targetCam.dist + e.deltaY * 0.018));
+      }, { passive: false });
+
+      // Mode Toggle Buttons (Orbit vs Pan)
+      const btnModeOrbit = document.getElementById('btnModeOrbit');
+      const btnModePan = document.getElementById('btnModePan');
+
+      btnModeOrbit.addEventListener('click', () => {
+        dragMode = 'orbit';
+        btnModeOrbit.classList.add('active');
+        btnModePan.classList.remove('active');
+        canvas.classList.remove('mode-pan');
+        canvas.classList.add('mode-orbit');
+      });
+
+      btnModePan.addEventListener('click', () => {
+        dragMode = 'pan';
+        btnModePan.classList.add('active');
+        btnModeOrbit.classList.remove('active');
+        canvas.classList.remove('mode-orbit');
+        canvas.classList.add('mode-pan');
+      });
+
+      // On-Screen Pan D-Pad & Zoom & 360 Slider
+      document.querySelectorAll('[data-pan]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const dir = btn.dataset.pan;
+          if (dir === 'left')  panCamera(65, 0);
+          if (dir === 'right') panCamera(-65, 0);
+          if (dir === 'up')    panCamera(0, 65);
+          if (dir === 'down')  panCamera(0, -65);
+        });
+      });
+
+      document.getElementById('btnResetCam').addEventListener('click', () => setPreset('overview'));
+      document.getElementById('zoomIn').addEventListener('click', () => {
+        targetCam.dist = Math.max(8.5, targetCam.dist - 3.0);
+      });
+      document.getElementById('zoomOut').addEventListener('click', () => {
+        targetCam.dist = Math.min(36, targetCam.dist + 3.0);
+      });
+
+      yawSlider.addEventListener('input', (e) => {
+        targetCam.yaw = (parseFloat(e.target.value) * Math.PI) / 180;
+        const normDeg = ((parseInt(e.target.value, 10) % 360) + 360) % 360;
+        angleReadout.textContent = normDeg + '°';
+      });
+
+      document.getElementById('autoRotate').addEventListener('change', (e) => {
+        autoRotate = e.target.checked;
+      });
+      document.getElementById('toggleHotspots').addEventListener('change', (e) => {
+        showHotspots = e.target.checked;
+      });
+
+      document.querySelectorAll('[data-light]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-light]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          lightMode = btn.dataset.light;
+        });
+      });
+
+      function setPreset(name) {
+        const p = CAM_PRESETS[name];
+        if (!p) return;
+        targetCam = { yaw: p.yaw, pitch: p.pitch, dist: p.dist, target: { ...p.target } };
+        updateYawUI();
+        document.querySelectorAll('[data-cam]').forEach(b => {
+          b.classList.toggle('active', b.dataset.cam === name);
+        });
+      }
+
+      document.querySelectorAll('[data-cam]').forEach(btn => {
+        btn.addEventListener('click', () => setPreset(btn.dataset.cam));
+      });
+
+      window.addEventListener('themechange', render);
+      buildSite();
+      updateYawUI();
+      tick();
+    })();
+  </script>
+</body>
+</html>
