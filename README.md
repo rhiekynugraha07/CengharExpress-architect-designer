@@ -54,6 +54,17 @@ bash ./scripts/install-skills.sh
 
 ---
 
-### 3. [Cenghar Kodim Cimahi](./projects/03-cenghar-kodim-cimahi/) — 🔥 URGENT (Prioritas Utama)
-- Dokumentasi dan folder kerja tersedia di [`projects/03-cenghar-kodim-cimahi/`](./projects/03-cenghar-kodim-cimahi/).
-- Siap menerima foto lahan, ukuran dimensi, dan brief kebutuhan untuk langsung dibuatkan **Render 3D Blender** + **Studio 3D Interaktif 360°**.
+### 3. [Cenghar Kodim Cimahi](./projects/03-cenghar-kodim-cimahi/) — ✅ Design v1 Selesai (Prioritas Utama)
+- **Dasar Denah**: Denah layout resmi [`Tembok.png`](./projects/03-cenghar-kodim-cimahi/site-photos/Tembok.png).
+- **Zonasi & Konsep Desain**:
+  - **Cenghar Booth (Bawah/Selatan)**: Container Cafe 20ft putih-krem (`#EAE8E3`) dengan jendela bar terbuka di bawah awning kanvas krem, bar counter kayu jati dengan under-counter LED strip, mesin espresso putih, dan pintu kaca geser frame hitam untuk area duduk *indoor* AC.
+  - **Area Kursi (Tengah Courtyard)**: Lantai koral abu-abu gelap dengan stepping slabs beton, meja kayu jati 2–4 pax, dan lampu festoon overhead.
+  - **Music Area (Kanan Bawah)**: Panggung akustik kayu elevated (+30 cm) dengan kisi-kisi kayu vertikal tepat di depan bangunan eksisting Kodim.
+  - **Tembok & 2 Area Hijau (Sisi Kiri)**: Dinding perimeter bata merah ekspos dilengkapi 2 blok planter box taman tropis Calathea Lutea, bangku panjang terintegrasi, dan pohon Ketapang Kencana.
+  - **Booth Tenant L-Shape (Atas & Kanan Atas)**: Deretan stan F&B mitra berkanopi baja hitam doff.
+  - **Area Parkir (Paling Atas/Utara)**: Area parkir kendaraan mobil & motor dengan marka rapi.
+- **Deliverables**:
+  - [Studio 3D Interaktif 360° (`projects/03-cenghar-kodim-cimahi/preview-360-3d.html`)](./projects/03-cenghar-kodim-cimahi/preview-360-3d.html) — Putar 360° & Geser Lahan
+  - [Dokumentasi Lengkap & Renders (`projects/03-cenghar-kodim-cimahi/README.md`)](./projects/03-cenghar-kodim-cimahi/README.md)
+
+![Preview 3D Cenghar Kodim Cimahi](./projects/03-cenghar-kodim-cimahi/renders/kodim_cimahi_aerial_3d.jpg)
