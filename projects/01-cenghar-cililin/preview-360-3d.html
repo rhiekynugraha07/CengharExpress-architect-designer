@@ -3,25 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cenghar Express Cililin — 360° Interactive 3D Viewer (Project #1)</title>
+  <title>Cenghar Express — WebGL 360° 3D Architectural Studio</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
-    canvas {
-      touch-action: none;
-      user-select: none;
-    }
-    .mode-orbit { cursor: grab; }
-    .mode-orbit:active { cursor: grabbing; }
-    .mode-pan { cursor: move; }
-    .pill-btn.active {
-      background-color: #8B1E2D;
-      color: #FAF5EC;
-      border-color: #8B1E2D;
-    }
-    .tool-btn.active {
-      background-color: #2B2B2B;
-      color: #FAF5EC;
-      border-color: #2B2B2B;
+    canvas { touch-action: none; user-select: none; }
+    .cursor-orbit { cursor: grab; }
+    .cursor-orbit:active { cursor: grabbing; }
+    .cursor-pan { cursor: move; }
+    .btn-active {
+      background-color: #8B1E2D !important;
+      color: #FAF5EC !important;
+      border-color: #8B1E2D !important;
     }
   </style>
 </head>
@@ -32,1213 +24,885 @@
       <div>
         <div class="flex items-center gap-2">
           <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:#8B1E2D;"></span>
-          <h1 class="text-base sm:text-lg font-bold tracking-tight">PROJECT #1: CENGHAR EXPRESS CILILIN — 360° 3D Studio</h1>
-          <span class="text-xs px-2 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] font-mono">Container Booth + Terasering Batu Kali</span>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight">CENGHAR EXPRESS — WebGL 360° 3D Studio</h1>
+          <span class="text-xs px-2 py-0.5 rounded bg-[var(--card)] border border-[var(--border)] font-mono">GLSL PBR Shader • Container Booth</span>
         </div>
         <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
-          Putar 360° & geser bebas • Booth Container Putih + Awning Krem • Courtyard Kolam & Bata Ekspos • Terasering Batu Kali 3 Tingkat
+          Drag untuk putar 360° • Tombol Geser / Klik kanan untuk geser lahan • Tekstur 3D Bata Ekspos, Batu Kali, Container Gelombang & Air Kolam
         </p>
       </div>
-
       <!-- Lighting Mode Selector -->
       <div class="flex items-center gap-1.5 text-xs">
-        <span class="text-[var(--muted-foreground)] mr-1">Lighting:</span>
-        <button data-light="day" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] transition">
-          Siang
-        </button>
-        <button data-light="golden" class="pill-btn active px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] transition">
-          Sore (Golden)
-        </button>
-        <button data-light="night" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] transition">
-          Malam
-        </button>
+        <span class="text-[var(--muted-foreground)] mr-1">Suasana:</span>
+        <button data-light="day" class="light-btn px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] transition">Siang</button>
+        <button data-light="golden" class="light-btn btn-active px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] transition">Sore (Golden)</button>
+        <button data-light="night" class="light-btn px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--card)] transition">Malam</button>
       </div>
     </div>
 
-    <!-- Main 3D Viewport Card -->
+    <!-- Main 3D Card -->
     <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
-      <!-- Top Control Toolbar -->
+      <!-- Toolbar -->
       <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border)] text-xs">
-        <!-- Drag Mode Toggle: Putar 360 vs Geser (Pan) -->
         <div class="flex items-center gap-1.5">
-          <span class="text-[var(--muted-foreground)] font-medium mr-1">Mode Drag:</span>
-          <button id="btnModeOrbit" class="tool-btn active px-2.5 py-1 rounded-md border border-[var(--border)] font-medium flex items-center gap-1 transition">
-            <span>↻</span> Putar 360° (Orbit)
+          <button id="modeOrbit" class="btn-active px-2.5 py-1 rounded-md border border-[var(--border)] font-medium transition">
+            ↻ Putar 360° (Orbit)
           </button>
-          <button id="btnModePan" class="tool-btn px-2.5 py-1 rounded-md border border-[var(--border)] font-medium flex items-center gap-1 transition">
-            <span>✥</span> Geser Lahan (Pan)
+          <button id="modePan" class="px-2.5 py-1 rounded-md border border-[var(--border)] font-medium transition">
+            ✥ Geser Lahan (Pan)
           </button>
         </div>
 
-        <!-- Camera Presets -->
         <div class="flex flex-wrap items-center gap-1">
-          <button data-cam="overview" class="pill-btn active px-2.5 py-1 rounded-md border border-[var(--border)] transition">Overview</button>
-          <button data-cam="booth" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">1. Container Booth</button>
-          <button data-cam="pond" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">2. Kolam & Courtyard</button>
-          <button data-cam="communal" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">3. Meja Komunal</button>
-          <button data-cam="terrace" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">4. Terasering 3 Tingkat</button>
-          <button data-cam="parking" class="pill-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">5. Parkir Bawah</button>
+          <button data-cam="overview" class="cam-btn btn-active px-2.5 py-1 rounded-md border border-[var(--border)] transition">Overview 3D</button>
+          <button data-cam="booth" class="cam-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">1. Container Booth</button>
+          <button data-cam="pond" class="cam-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">2. Kolam & Deck</button>
+          <button data-cam="communal" class="cam-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">3. Meja Komunal</button>
+          <button data-cam="terrace" class="cam-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">4. Terasering 3 Tingkat</button>
+          <button data-cam="parking" class="cam-btn px-2.5 py-1 rounded-md border border-[var(--border)] transition">5. Parkir Bawah</button>
         </div>
 
-        <!-- Options -->
         <div class="flex items-center gap-3">
           <label class="flex items-center gap-1 text-[var(--muted-foreground)] cursor-pointer select-none">
-            <input id="toggleHotspots" type="checkbox" checked class="accent-[#8B1E2D]" />
+            <input id="togglePins" type="checkbox" checked class="accent-[#8B1E2D]" />
             Label 3D
           </label>
           <label class="flex items-center gap-1 text-[var(--muted-foreground)] cursor-pointer select-none">
-            <input id="autoRotate" type="checkbox" class="accent-[#8B1E2D]" />
+            <input id="autoRot" type="checkbox" class="accent-[#8B1E2D]" />
             Auto-360°
           </label>
         </div>
       </div>
 
-      <!-- 3D Canvas Viewport -->
-      <div class="relative w-full" style="height: 520px;">
-        <canvas id="scene3d" class="w-full h-full block mode-orbit"></canvas>
+      <!-- WebGL Viewport -->
+      <div class="relative w-full" style="height: 540px;">
+        <canvas id="glCanvas" class="w-full h-full block cursor-orbit"></canvas>
+        <canvas id="hudCanvas" class="w-full h-full block absolute inset-0 pointer-events-none"></canvas>
 
-        <!-- On-Screen 360° & Pan Navigation Pad (Bottom Right) -->
-        <div class="absolute bottom-3 right-3 flex items-end gap-2">
-          <!-- D-Pad Geser (Pan) -->
-          <div class="p-1.5 rounded-lg backdrop-blur-md border border-white/15 grid grid-cols-3 gap-1 text-xs"
-               style="background: rgba(22, 20, 18, 0.75); color: #FAF5EC;">
+        <!-- Bottom-Left 360 Slider -->
+        <div class="absolute bottom-3 left-3 p-2.5 rounded-lg backdrop-blur-md border border-white/15 text-xs space-y-1"
+             style="background: rgba(18, 16, 15, 0.78); color: #FAF5EC;">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-medium">Putar Sudut 360°:</span>
+            <span id="degLabel" class="font-mono">327°</span>
+          </div>
+          <input id="yawSlider" type="range" min="-180" max="180" value="-33" class="w-52 accent-[#8B1E2D] cursor-pointer block" />
+          <div class="text-[11px] opacity-80">
+            Klik kiri + drag: <b>Putar 360°</b> • Klik kanan / tombol Geser: <b>Geser Lahan</b> • Scroll: <b>Zoom</b>
+          </div>
+        </div>
+
+        <!-- Bottom-Right D-Pad & Zoom -->
+        <div class="absolute bottom-3 right-3 flex items-end gap-2 text-xs">
+          <div class="p-1.5 rounded-lg backdrop-blur-md border border-white/15 grid grid-cols-3 gap-1"
+               style="background: rgba(18, 16, 15, 0.78); color: #FAF5EC;">
             <div></div>
             <button data-pan="up" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Maju">↑</button>
             <div></div>
             <button data-pan="left" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Kiri">←</button>
-            <button id="btnResetCam" class="w-7 h-7 rounded bg-[#8B1E2D] hover:opacity-90 flex items-center justify-center font-bold" title="Reset Kamera">⌂</button>
+            <button id="resetCam" class="w-7 h-7 rounded bg-[#8B1E2D] hover:opacity-90 font-bold flex items-center justify-center" title="Reset Kamera">⌂</button>
             <button data-pan="right" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Kanan">→</button>
             <div></div>
             <button data-pan="down" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Mundur">↓</button>
             <div></div>
           </div>
 
-          <!-- Zoom Stack -->
           <div class="flex flex-col gap-1 p-1.5 rounded-lg backdrop-blur-md border border-white/15"
-               style="background: rgba(22, 20, 18, 0.75); color: #FAF5EC;">
+               style="background: rgba(18, 16, 15, 0.78); color: #FAF5EC;">
             <button id="zoomIn" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-sm font-bold flex items-center justify-center" title="Zoom In">+</button>
             <button id="zoomOut" class="w-7 h-7 rounded bg-white/10 hover:bg-white/20 text-sm font-bold flex items-center justify-center" title="Zoom Out">−</button>
           </div>
         </div>
-
-        <!-- Bottom-Left 360° Quick Scrub Slider & Instructions -->
-        <div class="absolute bottom-3 left-3 flex flex-col gap-1.5 max-w-xs p-2.5 rounded-lg backdrop-blur-md border border-white/15 text-xs"
-             style="background: rgba(22, 20, 18, 0.75); color: #FAF5EC;">
-          <div class="flex items-center justify-between gap-3">
-            <span class="font-medium">Putar Sudut 360°:</span>
-            <span id="angleReadout" class="font-mono text-[11px] opacity-80">325°</span>
-          </div>
-          <input id="yawSlider" type="range" min="-180" max="180" value="-35" class="w-56 accent-[#8B1E2D] cursor-pointer" />
-          <div class="text-[11px] opacity-80">
-            • Klik kiri + geser: <b>Putar 360°</b> • Klik kanan / tombol Geser: <b>Geser Lahan</b> • Scroll: <b>Zoom</b>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Specs Bar -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5 text-xs">
-      <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
-        <div class="font-semibold">1. Container Booth (6.0 × 2.5m)</div>
-        <p class="text-[var(--muted-foreground)] mt-0.5">
-          Container gelombang putih-krem di atas dek kayu + 2 trap tangga. Kiri: bar terbuka + awning krem & 4 stool kayu. Kanan: pintu kaca geser frame hitam + ruang duduk indoor.
-        </p>
-      </div>
-      <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
-        <div class="font-semibold">2. Courtyard & Kolam Refleksi</div>
-        <p class="text-[var(--muted-foreground)] mt-0.5">
-          Jalur dek kayu abu-abu dengan kolam batu kali di tengah, koral abu-abu gelap, stepping slab beton 100×100 cm, dan kursi lipat kayu.
-        </p>
-      </div>
-      <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
-        <div class="font-semibold">3. Meja Komunal & Bata Ekspos</div>
-        <p class="text-[var(--muted-foreground)] mt-0.5">
-          Meja beton ekspos panjang dengan lubang pohon Ketapang Kencana di tengah, dinding keliling bata merah ekspos, tanaman Calathea Lutea & lampu bola putih.
-        </p>
-      </div>
-      <div class="p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
-        <div class="font-semibold">4. Terasering Batu Kali 3 Tingkat</div>
-        <p class="text-[var(--muted-foreground)] mt-0.5">
-          Mempertahankan talud batu kali & tangga kanan eksisting, ditambah dudukan tribun beton charcoal, lampu LED strip tangga, dan akses dari parkir bawah.
-        </p>
       </div>
     </div>
   </div>
 
   <script>
     (function () {
-      const canvas = document.getElementById('scene3d');
-      const ctx = canvas.getContext('2d');
+      const glCanvas = document.getElementById('glCanvas');
+      const hudCanvas = document.getElementById('hudCanvas');
+      const gl = glCanvas.getContext('webgl', { antialias: true, alpha: false });
+      const hud = hudCanvas.getContext('2d');
 
-      // Camera State (Spherical Orbit + Target Pan)
-      let cam = {
-        yaw: -0.60,
-        pitch: 0.46,
-        dist: 24.5,
-        target: { x: 0.2, y: 1.0, z: 0.0 }
-      };
-      let targetCam = {
-        yaw: cam.yaw,
-        pitch: cam.pitch,
-        dist: cam.dist,
-        target: { ...cam.target }
-      };
-
-      let dragMode = 'orbit'; // 'orbit' | 'pan'
-      let lightMode = 'golden'; // 'day' | 'golden' | 'night'
+      let cam = { yaw: -0.58, pitch: 0.44, dist: 23.5, target: [0.0, 1.0, 0.2] };
+      let targetCam = { yaw: -0.58, pitch: 0.44, dist: 23.5, target: [0.0, 1.0, 0.2] };
+      let dragMode = 'orbit';
+      let lightMode = 'golden';
       let autoRotate = false;
-      let showHotspots = true;
+      let showPins = true;
       let isDragging = false;
-      let activeButton = 0;
+      let activeBtn = 0;
       let lastX = 0, lastY = 0;
-      let animTime = 0;
+      let startTime = performance.now();
 
       const CAM_PRESETS = {
-        overview: { yaw: -0.60, pitch: 0.46, dist: 24.5, target: { x: 0.2, y: 1.0, z: 0.0 } },
-        booth:    { yaw: -0.25, pitch: 0.24, dist: 12.0, target: { x: -1.2, y: 1.4, z: 0.8 } },
-        pond:     { yaw: -0.10, pitch: 0.45, dist: 14.5, target: { x: 0.0, y: 0.4, z: -1.5 } },
-        communal: { yaw: -0.95, pitch: 0.36, dist: 13.5, target: { x: 3.8, y: 0.8, z: -1.2 } },
-        terrace:  { yaw: -0.35, pitch: 0.34, dist: 17.5, target: { x: 0.0, y: 2.2, z: 5.0 } },
-        parking:  { yaw: -0.75, pitch: 0.40, dist: 18.0, target: { x: -1.5, y: -0.4, z: -6.5 } }
+        overview: { yaw: -0.58, pitch: 0.44, dist: 23.5, target: [0.0, 1.0, 0.2] },
+        booth:    { yaw: -0.22, pitch: 0.22, dist: 10.8, target: [-1.2, 1.4, 1.0] },
+        pond:     { yaw: -0.08, pitch: 0.42, dist: 13.5, target: [0.2, 0.4, -1.6] },
+        communal: { yaw: -0.92, pitch: 0.34, dist: 13.0, target: [3.8, 0.8, -1.3] },
+        terrace:  { yaw: -0.32, pitch: 0.34, dist: 16.5, target: [0.0, 2.2, 5.0] },
+        parking:  { yaw: -0.72, pitch: 0.38, dist: 17.5, target: [-1.2, -0.4, -6.2] }
       };
 
-      const HOTSPOTS = [
-        { id: 'booth',    label: '1. Container Booth',     x: -1.2, y: 3.3, z: 1.5 },
-        { id: 'pond',     label: '2. Kolam & Deck Kayu',   x: -0.3, y: 0.7, z: -1.8 },
-        { id: 'communal', label: '3. Meja Komunal Beton',  x: 4.1,  y: 1.5, z: -1.2 },
-        { id: 'terrace',  label: '4. Terasering 3 Tingkat',x: -0.5, y: 3.5, z: 5.5 },
-        { id: 'parking',  label: '5. Parkir & Tangga Masuk',x: -0.3, y: 0.2, z: -5.8 }
+      const LABELS_3D = [
+        { id: 'booth',    text: 'CENGHAR EXPRESS', pos: [0.55, 3.16, 0.35], isSign: true },
+        { id: 'booth',    text: '1. Container Booth', pos: [-1.2, 3.55, 1.3], isPin: true },
+        { id: 'pond',     text: '2. Kolam & Deck Kayu', pos: [-0.2, 0.85, -2.0], isPin: true },
+        { id: 'communal', text: '3. Meja Komunal Beton', pos: [4.1, 1.75, -1.3], isPin: true },
+        { id: 'terrace',  text: '4. Terasering 3 Tingkat', pos: [-0.8, 3.75, 5.5], isPin: true },
+        { id: 'parking',  text: '5. Parkir & Tangga Masuk', pos: [-0.2, 0.35, -5.5], isPin: true }
       ];
+      let pinHitBoxes = [];
 
-      // Scene Primitives
-      const boxes = [];
-      const cylinders = [];
-      const foliageClusters = [];
-      const globeLamps = [];
-      const ledStrips = [];
-      const groundShadows = [];
-      let clickableHotspotRects = [];
+      const vsSource = `
+        attribute vec3 aPos;
+        attribute vec3 aNorm;
+        attribute vec2 aUV;
+        attribute vec3 aCol;
+        attribute float aMat;
 
-      function addBox(x, y, z, w, h, d, color, opts = {}) {
-        boxes.push({ x, y, z, w, h, d, color, ...opts });
-        if (opts.castShadow) {
-          groundShadows.push({ x, y: opts.shadowY ?? 0.02, z, w: w * 1.08, d: d * 1.08 });
+        uniform mat4 uProj;
+        uniform mat4 uView;
+
+        varying vec3 vWorldPos;
+        varying vec3 vNorm;
+        varying vec2 vUV;
+        varying vec3 vCol;
+        varying float vMat;
+
+        void main() {
+          vWorldPos = aPos;
+          vNorm = aNorm;
+          vUV = aUV;
+          vCol = aCol;
+          vMat = aMat;
+          gl_Position = uProj * uView * vec4(aPos, 1.0);
+        }
+      `;
+
+      const fsSource = `
+        precision highp float;
+        varying vec3 vWorldPos;
+        varying vec3 vNorm;
+        varying vec2 vUV;
+        varying vec3 vCol;
+        varying float vMat;
+
+        uniform vec3 uCamPos;
+        uniform vec3 uSunDir;
+        uniform vec3 uSunCol;
+        uniform vec3 uSkyAmb;
+        uniform vec3 uGndAmb;
+        uniform float uLightOn;
+        uniform float uTime;
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(
+            mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+            mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+            f.y
+          );
+        }
+
+        vec2 voronoi(vec2 x) {
+          vec2 n = floor(x);
+          vec2 f = fract(x);
+          float m1 = 8.0;
+          float m2 = 8.0;
+          float id = 0.0;
+          for (int j = -1; j <= 1; j++) {
+            for (int i = -1; i <= 1; i++) {
+              vec2 g = vec2(float(i), float(j));
+              vec2 o = vec2(hash(n + g), hash(n + g + vec2(17.0, 31.0)));
+              vec2 r = g - f + (0.15 + 0.7 * o);
+              float d = dot(r, r);
+              if (d < m1) {
+                m2 = m1;
+                m1 = d;
+                id = o.x;
+              } else if (d < m2) {
+                m2 = d;
+              }
+            }
+          }
+          return vec2(m2 - m1, id);
+        }
+
+        void main() {
+          vec3 N = normalize(vNorm);
+          vec3 V = normalize(uCamPos - vWorldPos);
+          vec3 baseCol = vCol;
+          float rough = 0.65;
+          float specStr = 0.22;
+          float mat = floor(vMat + 0.5);
+
+          if (mat == 1.0) {
+            vec2 bUV = vec2((vWorldPos.x + vWorldPos.z) * 4.2, vWorldPos.y * 12.5);
+            float row = floor(bUV.y);
+            bUV.x += mod(row, 2.0) * 0.5;
+            vec2 cell = fract(bUV);
+            vec2 bid = floor(bUV);
+            float mortar = step(0.08, cell.x) * step(cell.x, 0.94) * step(0.14, cell.y) * step(cell.y, 0.88);
+            float bVar = (hash(bid) - 0.5) * 0.14;
+            vec3 brickCol = clamp(baseCol + vec3(bVar, bVar * 0.4, bVar * 0.2), 0.0, 1.0);
+            vec3 mortarCol = vec3(0.76, 0.72, 0.66);
+            baseCol = mix(mortarCol, brickCol, mortar);
+            N = normalize(N + vec3(0.0, (cell.y - 0.5) * 0.18 * mortar, 0.0));
+            rough = 0.82;
+          }
+          else if (mat == 2.0) {
+            vec2 sUV = vec2((vWorldPos.x + vWorldPos.z) * 2.8, vWorldPos.y * 3.0);
+            vec2 vor = voronoi(sUV);
+            float edge = smoothstep(0.03, 0.14, vor.x);
+            vec3 stoneTint = baseCol * (0.82 + 0.34 * vor.y);
+            vec3 mortarDark = vec3(0.24, 0.22, 0.20);
+            baseCol = mix(mortarDark, stoneTint, edge);
+            N = normalize(N + vec3((vor.y - 0.5) * 0.22, (edge - 0.5) * 0.25, 0.0));
+            rough = 0.85;
+          }
+          else if (mat == 3.0) {
+            float coord = (abs(N.z) > 0.5 ? vWorldPos.x : vWorldPos.z) * 34.0;
+            float rib = sin(coord);
+            N = normalize(N + vec3(cos(coord) * 0.22 * abs(N.z), 0.0, cos(coord) * 0.22 * abs(N.x)));
+            baseCol = baseCol * (0.96 + 0.05 * rib);
+            rough = 0.35;
+            specStr = 0.48;
+          }
+          else if (mat == 4.0 || mat == 5.0) {
+            float plank = fract(vWorldPos.x * 6.5);
+            float seam = smoothstep(0.0, 0.05, plank) * smoothstep(1.0, 0.95, plank);
+            float grain = noise(vec2(vWorldPos.x * 12.0, vWorldPos.z * 38.0));
+            baseCol = baseCol * (0.90 + 0.14 * grain) * (0.78 + 0.22 * seam);
+            rough = mat == 4.0 ? 0.38 : 0.65;
+            specStr = mat == 4.0 ? 0.42 : 0.20;
+          }
+          else if (mat == 6.0) {
+            float n1 = noise(vWorldPos.xz * 26.0);
+            float n2 = hash(floor(vWorldPos.xz * 35.0));
+            baseCol = baseCol * (0.80 + 0.25 * n1 + 0.15 * (n2 - 0.5));
+            rough = 0.92;
+            specStr = 0.08;
+          }
+          else if (mat == 7.0) {
+            float w1 = sin(vWorldPos.x * 9.0 + uTime * 2.4) * cos(vWorldPos.z * 7.5 - uTime * 1.8);
+            float w2 = sin(vWorldPos.z * 14.0 + uTime * 3.1);
+            N = normalize(vec3(w1 * 0.12, 1.0, w2 * 0.12));
+            float fresnel = pow(1.0 - max(0.0, dot(N, V)), 3.0);
+            vec3 waterBase = mix(vec3(0.14, 0.34, 0.40), vec3(0.25, 0.68, 0.78), uLightOn * 0.65);
+            baseCol = mix(waterBase, uSkyAmb * 1.25, fresnel * 0.65);
+            rough = 0.08;
+            specStr = 0.95;
+          }
+          else if (mat == 8.0) {
+            vec3 glow = mix(vec3(0.95, 0.93, 0.88), vec3(1.0, 0.88, 0.58) * 1.35, max(0.35, uLightOn));
+            gl_FragColor = vec4(glow, 1.0);
+            return;
+          }
+          else if (mat == 9.0) {
+            float lf = noise(vWorldPos.xz * 8.0 + vWorldPos.y * 5.0);
+            baseCol = baseCol * (0.82 + 0.35 * lf);
+            rough = 0.55;
+          }
+          else if (mat == 10.0) {
+            float fres = pow(1.0 - max(0.0, dot(N, V)), 2.2);
+            vec3 interiorWarm = mix(vec3(0.55, 0.44, 0.32), vec3(1.0, 0.76, 0.42), max(0.3, uLightOn));
+            vec3 glassCol = mix(interiorWarm, uSkyAmb * 1.2, fres * 0.65);
+            gl_FragColor = vec4(glassCol, 1.0);
+            return;
+          }
+
+          float NdotL = max(0.0, dot(N, uSunDir));
+          vec3 H = normalize(uSunDir + V);
+          float spec = pow(max(0.0, dot(N, H)), mix(8.0, 64.0, 1.0 - rough)) * specStr * NdotL;
+          vec3 hemi = mix(uGndAmb, uSkyAmb, N.y * 0.5 + 0.5);
+
+          float shadow = 1.0;
+          if (vWorldPos.y < 0.32) {
+            if (vWorldPos.x > -4.3 && vWorldPos.x < 1.9 && vWorldPos.z > -0.9 && vWorldPos.z < 2.6) {
+              shadow *= 0.58;
+            }
+            if (vWorldPos.x > 3.4 && vWorldPos.x < 4.8 && vWorldPos.z > -3.4 && vWorldPos.z < 0.4) {
+              shadow *= 0.62;
+            }
+          }
+
+          vec3 color = baseCol * (hemi + uSunCol * NdotL * shadow) + uSunCol * spec * shadow;
+
+          vec3 warmCol = vec3(1.0, 0.74, 0.38) * (0.35 + 0.85 * uLightOn);
+          vec3 p1 = vec3(-2.6, 1.6, 0.0) - vWorldPos;
+          vec3 p2 = vec3(0.4, 1.5, 0.6) - vWorldPos;
+          vec3 p3 = vec3(-0.2, 0.5, -2.1) - vWorldPos;
+          vec3 p4 = vec3(-4.2, 2.2, -2.5) - vWorldPos;
+          vec3 p5 = vec3(4.1, 2.2, -1.5) - vWorldPos;
+          vec3 p6 = vec3(0.0, 2.5, 4.8) - vWorldPos;
+
+          float att1 = 1.0 / (1.0 + 0.22 * dot(p1, p1));
+          float att2 = 1.0 / (1.0 + 0.25 * dot(p2, p2));
+          float att3 = 1.0 / (1.0 + 0.35 * dot(p3, p3));
+          float att4 = 1.0 / (1.0 + 0.18 * dot(p4, p4));
+          float att5 = 1.0 / (1.0 + 0.18 * dot(p5, p5));
+          float att6 = 1.0 / (1.0 + 0.12 * dot(p6, p6));
+
+          vec3 ptLight = warmCol * (att1 * 1.15 + att2 * 0.85 + att4 * 0.75 + att5 * 0.75 + att6 * 0.85)
+                       + vec3(0.35, 0.85, 0.95) * (att3 * 0.7 * uLightOn);
+
+          color += baseCol * ptLight;
+          color = color / (color + vec3(0.85)) * 1.65;
+          gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+        }
+      `;
+
+      function compileShader(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return s;
+      }
+      const prog = gl.createProgram();
+      gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSource));
+      gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSource));
+      gl.linkProgram(prog);
+      gl.useProgram(prog);
+
+      const verts = [];
+      function hexRgb(hex) {
+        const v = parseInt(hex.slice(1), 16);
+        return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255];
+      }
+
+      function pushQuad(p0, p1, p2, p3, n, col, mat) {
+        const pts = [p0, p1, p2, p0, p2, p3];
+        const uvs = [[0,0],[1,0],[1,1],[0,0],[1,1],[0,1]];
+        for (let i = 0; i < 6; i++) {
+          verts.push(
+            pts[i][0], pts[i][1], pts[i][2],
+            n[0], n[1], n[2],
+            uvs[i][0], uvs[i][1],
+            col[0], col[1], col[2],
+            mat
+          );
         }
       }
 
-      function addStool(x, baseY, z, h = 0.62, r = 0.22, topColor = '#c48f48', legColor = '#232323') {
-        cylinders.push({ x, y: baseY, z, h, r, topColor, legColor });
-      }
-
-      function addKetapangTree(x, baseY, z, height = 3.6, spread = 1.9) {
-        // Slender trunk
-        addBox(x, baseY + height * 0.45, z, 0.14, height * 0.9, 0.14, '#5c4938');
-        // Signature tiered horizontal pagoda-like foliage layers of Ketapang Kencana
-        const tiers = [
-          { y: baseY + height * 0.55, r: spread * 0.95, ry: 0.32 },
-          { y: baseY + height * 0.78, r: spread * 0.75, ry: 0.28 },
-          { y: baseY + height * 0.98, r: spread * 0.48, ry: 0.24 }
+      function addBox(x, y, z, w, h, d, hex, mat = 0) {
+        const hw = w / 2, hh = h / 2, hd = d / 2;
+        const col = hexRgb(hex);
+        const v = [
+          [x - hw, y - hh, z - hd], [x + hw, y - hh, z - hd],
+          [x + hw, y + hh, z - hd], [x - hw, y + hh, z - hd],
+          [x - hw, y - hh, z + hd], [x + hw, y - hh, z + hd],
+          [x + hw, y + hh, z + hd], [x - hw, y + hh, z + hd]
         ];
-        for (const tier of tiers) {
-          foliageClusters.push({
-            kind: 'ketapang',
-            x, y: tier.y, z, r: tier.r, ry: tier.ry
-          });
+        pushQuad(v[0], v[1], v[2], v[3], [0, 0, -1], col, mat);
+        pushQuad(v[5], v[4], v[7], v[6], [0, 0, 1],  col, mat);
+        pushQuad(v[4], v[0], v[3], v[7], [-1, 0, 0], col, mat);
+        pushQuad(v[1], v[5], v[6], v[2], [1, 0, 0],  col, mat);
+        pushQuad(v[3], v[2], v[6], v[7], [0, 1, 0],  col, mat);
+        pushQuad(v[4], v[5], v[1], v[0], [0, -1, 0], col, mat);
+      }
+
+      function addCylinder(x, y, z, rTop, rBot, h, segs, hex, mat = 0) {
+        const col = hexRgb(hex);
+        const y0 = y - h / 2, y1 = y + h / 2;
+        for (let i = 0; i < segs; i++) {
+          const a0 = (i / segs) * Math.PI * 2;
+          const a1 = ((i + 1) / segs) * Math.PI * 2;
+          const c0 = Math.cos(a0), s0 = Math.sin(a0);
+          const c1 = Math.cos(a1), s1 = Math.sin(a1);
+          const p0 = [x + c0 * rBot, y0, z + s0 * rBot];
+          const p1 = [x + c1 * rBot, y0, z + s1 * rBot];
+          const p2 = [x + c1 * rTop, y1, z + s1 * rTop];
+          const p3 = [x + c0 * rTop, y1, z + s0 * rTop];
+          pushQuad(p0, p1, p2, p3, [(c0 + c1) / 2, 0, (s0 + s1) / 2], col, mat);
+          const centerTop = [x, y1, z];
+          pushQuad(centerTop, p3, p2, centerTop, [0, 1, 0], col, mat);
         }
-        groundShadows.push({ x, y: baseY + 0.02, z, w: spread * 1.5, d: spread * 1.5, round: true });
       }
 
-      function addCalatheaRow(x1, z1, x2, z2, baseY, count) {
-        for (let i = 0; i < count; i++) {
-          const t = count === 1 ? 0.5 : i / (count - 1);
-          const px = x1 + (x2 - x1) * t;
-          const pz = z1 + (z2 - z1) * t;
-          foliageClusters.push({
-            kind: 'calathea',
-            x: px, y: baseY + 0.45, z: pz, r: 0.52, ry: 0.55
-          });
+      function addEllipsoid(x, y, z, rx, ry, rz, latSegs, lonSegs, hex, mat = 0) {
+        const col = hexRgb(hex);
+        for (let i = 0; i < latSegs; i++) {
+          const t0 = (i / latSegs) * Math.PI;
+          const t1 = ((i + 1) / latSegs) * Math.PI;
+          for (let j = 0; j < lonSegs; j++) {
+            const p0 = (j / lonSegs) * Math.PI * 2;
+            const p1 = ((j + 1) / lonSegs) * Math.PI * 2;
+            const pt = (t, p) => [
+              x + rx * Math.sin(t) * Math.cos(p),
+              y + ry * Math.cos(t),
+              z + rz * Math.sin(t) * Math.sin(p)
+            ];
+            const n = [Math.sin((t0 + t1) / 2) * Math.cos((p0 + p1) / 2), Math.cos((t0 + t1) / 2), Math.sin((t0 + t1) / 2) * Math.sin((p0 + p1) / 2)];
+            pushQuad(pt(t0, p0), pt(t1, p0), pt(t1, p1), pt(t0, p1), n, col, mat);
+          }
         }
       }
 
-      function addGlobeLamp(x, baseY, z, dirX = 0, dirZ = 1) {
-        // Matte black pole
-        addBox(x, baseY + 1.25, z, 0.08, 2.5, 0.08, '#1d1d1d');
-        // Curved arm & frosted white glass globe
-        const gx = x + dirX * 0.32;
-        const gz = z + dirZ * 0.32;
-        addBox((x + gx) / 2, baseY + 2.48, (z + gz) / 2, Math.abs(dirX) * 0.32 + 0.06, 0.06, Math.abs(dirZ) * 0.32 + 0.06, '#1d1d1d');
-        globeLamps.push({ x: gx, y: baseY + 2.32, z: gz, r: 0.19 });
+      function addBarStool(x, baseY, z) {
+        addCylinder(x, baseY + 0.62, z, 0.19, 0.19, 0.05, 14, '#c88d48', 4);
+        addBox(x - 0.11, baseY + 0.30, z - 0.11, 0.03, 0.60, 0.03, '#262626', 0);
+        addBox(x + 0.11, baseY + 0.30, z - 0.11, 0.03, 0.60, 0.03, '#262626', 0);
+        addBox(x - 0.11, baseY + 0.30, z + 0.11, 0.03, 0.60, 0.03, '#262626', 0);
+        addBox(x + 0.11, baseY + 0.30, z + 0.11, 0.03, 0.60, 0.03, '#262626', 0);
+        addCylinder(x, baseY + 0.22, z, 0.15, 0.15, 0.025, 12, '#222222', 0);
       }
 
-      function buildSite() {
-        boxes.length = 0;
-        cylinders.length = 0;
-        foliageClusters.length = 0;
-        globeLamps.length = 0;
-        ledStrips.length = 0;
-        groundShadows.length = 0;
+      function addKetapangTree(x, baseY, z, h = 3.8, r = 1.9) {
+        addCylinder(x, baseY + h * 0.45, z, 0.07, 0.11, h * 0.9, 10, '#5e4936', 0);
+        addEllipsoid(x, baseY + h * 0.56, z, r * 0.95, 0.34, r * 0.95, 6, 12, '#3d733f', 9);
+        addEllipsoid(x, baseY + h * 0.78, z, r * 0.72, 0.30, r * 0.72, 6, 12, '#4a8749', 9);
+        addEllipsoid(x, baseY + h * 0.98, z, r * 0.45, 0.25, r * 0.45, 5, 10, '#589954', 9);
+      }
 
-        // 0. SURROUNDING HILLSIDE TERRAIN PAD (Anchors the site so it never floats!)
-        addBox(0, -1.65, 0.5, 22.0, 0.5, 23.0, '#3a4434', { mat: 'terrain' });
-        // Front neighborhood road
-        addBox(0, -1.38, -9.2, 22.0, 0.12, 3.6, '#383b40');
+      function addCalatheaBush(x, baseY, z) {
+        addEllipsoid(x, baseY + 0.42, z, 0.42, 0.48, 0.36, 5, 8, '#3f783d', 9);
+        addEllipsoid(x + 0.18, baseY + 0.36, z + 0.12, 0.32, 0.40, 0.30, 5, 8, '#4e8c49', 9);
+      }
 
-        // 1. LOWER PARKING AREA (EL -1.1m, Z: -7.5 to -4.6)
-        addBox(0, -1.25, -6.2, 13.6, 0.3, 3.4, '#686b6e', { mat: 'gravel' });
-        // Batu Kali Retaining Wall between Parking (-1.1m) and Main Courtyard (0.0m)
-        addBox(-3.6, -0.55, -4.45, 6.2, 1.1, 0.45, '#767167', { mat: 'stone' });
-        addBox(3.6, -0.55, -4.45, 6.2, 1.1, 0.45, '#767167', { mat: 'stone' });
+      function addGlobeLamp(x, baseY, z, dirX, dirZ) {
+        addCylinder(x, baseY + 1.25, z, 0.04, 0.05, 2.5, 8, '#1a1a1a', 0);
+        const gx = x + dirX * 0.28, gz = z + dirZ * 0.28;
+        addBox((x + gx) / 2, baseY + 2.46, (z + gz) / 2, Math.abs(dirX) * 0.28 + 0.05, 0.05, Math.abs(dirZ) * 0.28 + 0.05, '#1a1a1a', 0);
+        addEllipsoid(gx, baseY + 2.30, gz, 0.18, 0.18, 0.18, 8, 12, '#fff8e0', 8);
+      }
 
-        // Parked Cars in Lower Parking (Realistic proportions)
-        // Dark Grey SUV on Right
-        addBox(3.6, -0.78, -6.3, 3.4, 0.65, 1.55, '#282c32', { castShadow: true, shadowY: -1.09 });
-        addBox(3.7, -0.28, -6.3, 1.9, 0.48, 1.38, '#363b42');
-        // Silver Sedan on Left
-        addBox(-4.2, -0.82, -6.3, 3.2, 0.58, 1.5, '#7a7e85', { castShadow: true, shadowY: -1.09 });
-        addBox(-4.1, -0.36, -6.3, 1.7, 0.44, 1.32, '#91969e');
+      function buildSceneGeometry() {
+        verts.length = 0;
+        addBox(0, -1.55, 0.5, 26.0, 0.6, 26.0, '#364430', 0);
+        addBox(0, -1.24, -8.8, 26.0, 0.08, 3.6, '#33363b', 0);
 
-        // Wide Illuminated Entrance Stairs from Parking (-1.1m) to Courtyard (0.0m)
+        addBox(0, -1.18, -5.8, 13.8, 0.16, 3.2, '#5c6066', 6);
+        addBox(-4.0, -0.55, -4.3, 5.6, 1.1, 0.45, '#787268', 2);
+        addBox(4.0,  -0.55, -4.3, 5.6, 1.1, 0.45, '#787268', 2);
+
+        addBox(3.6, -0.78, -5.8, 3.3, 0.62, 1.55, '#252930', 0);
+        addBox(3.7, -0.32, -5.8, 1.85, 0.45, 1.38, '#353b45', 0);
+        addBox(-4.2, -0.80, -5.8, 3.1, 0.56, 1.48, '#7d828a', 0);
+        addBox(-4.1, -0.38, -5.8, 1.65, 0.42, 1.32, '#9298a0', 0);
+
         for (let i = 0; i < 5; i++) {
           const sy = -0.98 + i * 0.22;
-          const sz = -5.15 + i * 0.30;
-          addBox(-0.2, sy, sz, 2.7, 0.22, 0.34, '#c8c4bc');
-          ledStrips.push({ x1: -1.48, x2: 1.08, y: sy + 0.11, z: sz - 0.17 });
+          const sz = -4.95 + i * 0.30;
+          addBox(-0.2, sy, sz, 2.6, 0.20, 0.34, '#c5c1b8', 0);
+          addBox(-0.2, sy + 0.09, sz - 0.17, 2.5, 0.035, 0.03, '#ffe39e', 8);
         }
 
-        // 2. MAIN COURTYARD (EL 0.0m, X: -6.5 to +6.5, Z: -4.4 to +2.8)
-        // Dark grey crushed gravel floor
-        addBox(0, -0.55, -0.8, 13.2, 1.1, 7.3, '#585c60', { mat: 'gravel' });
+        addBox(0, -0.55, -0.7, 13.4, 1.1, 7.2, '#54585c', 6);
+        addBox(-0.2, 0.03, -1.9, 3.3, 0.06, 4.8, '#858078', 5);
+        addBox(2.6, 0.03, -0.1, 3.0, 0.06, 1.35, '#858078', 5);
 
-        // Grey Wood-Plank Decking Central Walkway + Reflecting Pond
-        addBox(-0.2, 0.03, -2.0, 3.3, 0.06, 4.7, '#87827a', { mat: 'greywood' });
-        // Connecting grey wood walkway to right staircase
-        addBox(2.8, 0.03, -0.2, 3.2, 0.06, 1.4, '#87827a', { mat: 'greywood' });
+        addBox(-0.2, 0.12, -2.0, 1.45, 0.18, 2.85, '#52565a', 0);
+        addBox(-0.2, 0.17, -2.0, 1.18, 0.14, 2.58, '#286475', 7);
+        addEllipsoid(-0.15, 0.32, -1.35, 0.25, 0.22, 0.22, 6, 10, '#858076', 2);
+        addEllipsoid(-0.35, 0.26, -1.65, 0.18, 0.16, 0.18, 6, 10, '#726e65', 2);
+        addEllipsoid(0.08,  0.24, -2.50, 0.20, 0.15, 0.18, 6, 10, '#7e7970', 2);
 
-        // Minimalist Rectangular Reflecting Water Pond in Center of Grey Wood Deck
-        addBox(-0.2, 0.12, -2.1, 1.45, 0.18, 2.9, '#55585c'); // concrete pond rim
-        addBox(-0.2, 0.16, -2.1, 1.18, 0.14, 2.62, '#2d5a68', { mat: 'water' }); // animated water
-        // Natural Boulders inside Pond
-        addBox(-0.15, 0.34, -1.35, 0.45, 0.38, 0.42, '#8b877e');
-        addBox(-0.38, 0.26, -1.65, 0.32, 0.24, 0.30, '#75726a');
-        addBox(0.05, 0.24, -2.65, 0.36, 0.22, 0.34, '#827e75');
-
-        // Concrete Stepping Slabs (100x100cm light grey pavers)
         const slabs = [
-          // Left seating zone slabs
-          [-4.8, -3.2], [-3.5, -3.2], [-4.8, -1.9], [-3.5, -1.9], [-2.4, -1.9],
-          // Right communal & lounge slabs
-          [2.0, -3.2], [2.0, -2.0], [2.0, -0.8],
-          [3.2, -3.2], [3.2, -2.0]
+          [-4.8, -3.1], [-3.5, -3.1], [-4.8, -1.8], [-3.5, -1.8], [-2.3, -1.8],
+          [2.0, -3.1], [2.0, -1.9], [2.0, -0.7], [3.1, -3.1], [3.1, -1.9]
         ];
         for (const [sx, sz] of slabs) {
-          addBox(sx, 0.03, sz, 1.05, 0.06, 1.05, '#b8b9bc');
+          addBox(sx, 0.03, sz, 1.05, 0.06, 1.05, '#b8babe', 0);
         }
 
-        // 3. EXACT WHITE CORRUGATED CONTAINER CAFE BOOTH (From User's Photo!)
-        // Placed at X: -1.2 (spans X: -4.2 to +1.8), Z: +1.3 (spans Z: 0.0 to +2.5)
-        // Elevated Warm Teak Wood Deck Platform + Dark Charcoal Base
-        addBox(-1.2, 0.11, 1.1, 6.5, 0.22, 3.2, '#282a2e'); // dark charcoal plinth
-        addBox(-1.2, 0.24, 1.1, 6.4, 0.06, 3.1, '#c48845', { mat: 'teakdeck' }); // warm teak deck
-        // Two dark charcoal stepped risers at the front
-        addBox(-1.2, 0.07, -0.62, 2.8, 0.14, 0.32, '#2f3236');
-        addBox(-1.2, 0.15, -0.36, 2.8, 0.16, 0.30, '#383b40');
+        addBox(-1.2, 0.11, 1.2, 6.5, 0.22, 3.1, '#282a2e', 0);
+        addBox(-1.2, 0.24, 1.2, 6.4, 0.06, 3.0, '#c68a46', 4);
+        addBox(-1.2, 0.07, -0.48, 2.8, 0.14, 0.30, '#2e3136', 0);
+        addBox(-1.2, 0.15, -0.22, 2.8, 0.16, 0.28, '#383c42', 0);
 
-        // Main 20ft Container Shell (Off-White / Warm Light Grey Corrugated Metal #EAE8E3)
-        // Container spans X: -4.1 to +1.7 (width 5.8m), Z: 0.2 to 2.4 (depth 2.2m), Y: 0.27 to 2.85
-        // Back wall
-        addBox(-1.2, 1.56, 2.32, 5.8, 2.58, 0.16, '#e6e4de', { mat: 'container' });
-        // Left end wall
-        addBox(-4.02, 1.56, 1.3, 0.16, 2.58, 2.2, '#e6e4de', { mat: 'container' });
-        // Right end wall
-        addBox(1.62, 1.56, 1.3, 0.16, 2.58, 2.2, '#e6e4de', { mat: 'container' });
-        // Roof slab
-        addBox(-1.2, 2.82, 1.3, 5.85, 0.14, 2.26, '#dedcd6', { castShadow: true, shadowY: 0.02 });
-        // Front top header beam (corrugated white strip above window & door)
-        addBox(-1.2, 2.58, 0.26, 5.8, 0.42, 0.14, '#eae8e2', { mat: 'container' });
-        // Center vertical divider pillar between Left Bar Window and Right Glass Door
-        addBox(-1.15, 1.48, 0.26, 0.22, 2.42, 0.16, '#eae8e2');
+        addBox(-1.2, 1.56, 2.40, 5.8, 2.58, 0.16, '#eae8e2', 3);
+        addBox(-4.02, 1.56, 1.38, 0.16, 2.58, 2.2, '#eae8e2', 3);
+        addBox(1.62,  1.56, 1.38, 0.16, 2.58, 2.2, '#eae8e2', 3);
+        addBox(-1.2, 2.82, 1.38, 5.86, 0.14, 2.26, '#dfddd7', 0);
+        addBox(-1.2, 2.58, 0.34, 5.8, 0.42, 0.14, '#eae8e2', 3);
+        addBox(-1.15, 1.48, 0.34, 0.22, 2.42, 0.16, '#eae8e2', 3);
+        addBox(0.55, 3.14, 0.45, 1.8, 0.48, 0.16, '#f6f4ef', 0);
 
-        // Rooftop Sign Box ("Cenghar Express" white box with black frame on top-right of container)
-        addBox(0.55, 3.14, 0.45, 1.75, 0.48, 0.18, '#f7f5f0', {
-          isSign: true,
-          label: 'Cenghar Express',
-          signColor: '#1f1f1f',
-          signBg: '#f7f5f0'
-        });
+        addBox(-2.62, 0.72, 0.38, 2.75, 0.90, 0.14, '#eae8e2', 3);
+        addBox(-2.62, 1.20, 0.22, 2.88, 0.08, 0.52, '#c88d48', 4);
+        addBox(-2.62, 1.13, 0.08, 2.72, 0.04, 0.04, '#ffe29a', 8);
+        for (const sx of [-3.65, -2.98, -2.32, -1.66]) {
+          addBarStool(sx, 0.27, -0.14);
+        }
+        addBox(-2.62, 1.55, 2.22, 2.7, 2.4, 0.12, '#bc8142', 4);
+        addBox(-2.62, 1.12, 1.80, 2.6, 0.85, 0.6, '#9c6830', 4);
+        addBox(-3.15, 1.48, 0.45, 0.72, 0.46, 0.42, '#f2f0eb', 0);
+        addBox(-2.45, 1.48, 0.45, 0.18, 0.48, 0.22, '#202020', 0);
+        addBox(-2.62, 1.92, 2.08, 2.5, 0.06, 0.28, '#875625', 4);
+        addBox(-2.62, 1.87, 1.98, 2.4, 0.035, 0.04, '#ffe29a', 8);
+        addBox(-2.62, 2.28, 2.08, 2.5, 0.06, 0.28, '#875625', 4);
+        addBox(-2.62, 2.23, 1.98, 2.4, 0.035, 0.04, '#ffe29a', 8);
+        addBox(-2.65, 2.46, -0.28, 3.0, 0.10, 1.35, '#ebdBC2', 0);
+        addBox(-2.65, 2.36, -0.95, 3.0, 0.14, 0.05, '#dfd0b6', 0);
 
-        // LEFT HALF OF CONTAINER (X: -4.0 to -1.25): Open Barista Service Counter
-        // Lower counter front wall (off-white vertical corrugated panels)
-        addBox(-2.62, 0.72, 0.30, 2.75, 0.90, 0.14, '#e8e6e0', { mat: 'container' });
-        // Cantilevered Warm Wood Bar Countertop Overhang
-        addBox(-2.62, 1.20, 0.14, 2.88, 0.09, 0.52, '#c88f4a');
-        // Warm Under-Counter LED Strip Light
-        ledStrips.push({ x1: -3.95, x2: -1.30, y: 1.13, z: 0.02 });
-        // 4 Round Wooden Bar Stools in front of the counter
-        addStool(-3.65, 0.27, -0.22, 0.62, 0.18);
-        addStool(-3.00, 0.27, -0.22, 0.62, 0.18);
-        addStool(-2.35, 0.27, -0.22, 0.62, 0.18);
-        addStool(-1.70, 0.27, -0.22, 0.62, 0.18);
-
-        // Interior of Left Barista Zone (Warm Wood Back Wall + Shelves + White Espresso Machine)
-        addBox(-2.62, 1.55, 2.15, 2.7, 2.4, 0.12, '#b87d3e'); // warm wood interior back panel
-        addBox(-2.62, 1.15, 1.75, 2.6, 0.85, 0.6, '#9c6830'); // back prep counter
-        // White & Chrome 2-Group Espresso Machine (matching photo!)
-        addBox(-3.15, 1.48, 0.38, 0.72, 0.46, 0.42, '#f0eee9');
-        addBox(-3.15, 1.52, 0.16, 0.58, 0.22, 0.06, '#b8bcc2'); // chrome grouphead
-        // Black Coffee Grinders next to Espresso Machine
-        addBox(-2.45, 1.48, 0.38, 0.18, 0.48, 0.22, '#222222');
-        addBox(-2.15, 1.46, 0.38, 0.18, 0.44, 0.22, '#e5e3dd');
-        // 2 Tiers of Warm Backlit Wooden Shelves stocked with Coffee Jars
-        addBox(-2.62, 1.92, 2.02, 2.5, 0.07, 0.28, '#875625');
-        addBox(-2.62, 2.28, 2.02, 2.5, 0.07, 0.28, '#875625');
-        ledStrips.push({ x1: -3.8, x2: -1.45, y: 1.88, z: 1.92 });
-        ledStrips.push({ x1: -3.8, x2: -1.45, y: 2.24, z: 1.92 });
-
-        // Warm Cream/Beige Retractable Fabric Awning Over Left Bar Window
-        addBox(-2.65, 2.46, -0.35, 3.0, 0.12, 1.35, '#eadbc2', { castShadow: true, shadowY: 0.27 });
-        addBox(-2.65, 2.36, -1.02, 3.0, 0.14, 0.05, '#dfcfb4'); // awning front valance flap
-
-        // RIGHT HALF OF CONTAINER (X: -1.05 to +1.55): Black-Framed Sliding Glass Door & Indoor Nook
-        // Warm-lit indoor floor & wood walls
-        addBox(0.25, 1.55, 2.15, 2.5, 2.4, 0.12, '#c79355');
-        // Indoor small wooden cafe table & bench inside the glass room
-        addBox(0.55, 0.72, 1.35, 0.9, 0.7, 0.65, '#8f5e2c');
-        addBox(1.15, 1.85, 1.35, 0.28, 0.07, 1.4, '#7d5022'); // right wall shelf
-        // Black Menu & Brand Panel on Left Glass Leaf ("CENGHAR EXPRESS")
-        addBox(-0.68, 0.85, 0.24, 0.78, 1.15, 0.08, '#1a1c1e', {
-          isSign: true,
-          label: 'CENGHAR EXPRESS',
-          signColor: '#FAF5EC'
-        });
-        // Black-Framed Chalkboard Menu above the brand panel
-        addBox(-0.68, 1.88, 0.24, 0.72, 0.78, 0.06, '#222528');
-        // Translucent Sliding Glass Doors (2 panels) with Matte Black Frames
-        addBox(0.10, 1.34, 0.24, 0.82, 2.14, 0.06, '#8ab4c4', { mat: 'glass' });
-        addBox(0.92, 1.34, 0.24, 0.82, 2.14, 0.06, '#8ab4c4', { mat: 'glass' });
-        // Black Aluminum Door Frame Bars
-        addBox(-1.08, 1.34, 0.23, 0.07, 2.18, 0.09, '#181818');
-        addBox(-0.28, 1.34, 0.23, 0.07, 2.18, 0.09, '#181818');
-        addBox(0.52,  1.34, 0.23, 0.07, 2.18, 0.09, '#181818');
-        addBox(1.34,  1.34, 0.23, 0.07, 2.18, 0.09, '#181818');
-        addBox(0.13,  2.40, 0.23, 2.50, 0.08, 0.09, '#181818');
-
-        // 4. COURTYARD FURNITURE (Lurra Reference Style)
-        // Left Courtyard: Wooden Folding Cafe Tables & Chairs on Concrete Slabs
-        const leftTables = [[-4.15, -3.2], [-4.15, -1.9]];
-        for (const [tx, tz] of leftTables) {
-          addBox(tx, 0.40, tz, 0.10, 0.74, 0.10, '#262626');
-          addBox(tx, 0.78, tz, 0.78, 0.06, 0.78, '#b88144', { castShadow: true, shadowY: 0.06 });
-          // Folding wooden chairs
-          addBox(tx - 0.62, 0.42, tz, 0.42, 0.76, 0.42, '#a67238');
-          addBox(tx + 0.62, 0.42, tz, 0.42, 0.76, 0.42, '#a67238');
+        addBox(0.25, 1.55, 2.22, 2.5, 2.4, 0.12, '#c89254', 4);
+        addBox(0.55, 0.72, 1.42, 0.9, 0.7, 0.65, '#8f5e2c', 4);
+        addBox(-0.68, 0.85, 0.32, 0.78, 1.15, 0.08, '#1a1c1e', 0);
+        addBox(-0.68, 1.88, 0.32, 0.72, 0.78, 0.06, '#232629', 0);
+        addBox(0.10, 1.34, 0.32, 0.82, 2.14, 0.05, '#8ab4c4', 10);
+        addBox(0.92, 1.34, 0.32, 0.82, 2.14, 0.05, '#8ab4c4', 10);
+        for (const fx of [-1.08, -0.28, 0.52, 1.34]) {
+          addBox(fx, 1.34, 0.30, 0.07, 2.18, 0.09, '#161616', 0);
         }
 
-        // Right Courtyard: Long Charcoal Concrete Communal Table with Tree Cutout!
-        // Spans Z: -3.3 to +0.3 at X: +4.1
-        addBox(4.1, 0.38, -2.7, 0.95, 0.72, 0.22, '#3d4045'); // front concrete pedestal leg
-        addBox(4.1, 0.38, -0.3, 0.95, 0.72, 0.22, '#3d4045'); // back concrete pedestal leg
-        addBox(4.1, 0.78, -1.5, 1.18, 0.12, 3.6, '#50545a', { castShadow: true, shadowY: 0.02 }); // concrete tabletop
-        // Dark tree hole cutout in middle of communal table + Ketapang Kencana tree growing through it!
-        addBox(4.1, 0.85, -1.3, 0.42, 0.03, 0.42, '#282a2c');
-        addKetapangTree(4.1, 0.0, -1.3, 4.2, 2.1);
-
-        // Round Wood-Top Industrial Bar Stools around Communal Table
-        for (const sz of [-2.8, -2.0, -0.7, 0.0]) {
-          addStool(3.25, 0.03, sz, 0.54, 0.20);
-          addStool(4.95, 0.03, sz, 0.54, 0.20);
+        for (const [tx, tz] of [[-4.15, -3.1], [-4.15, -1.8]]) {
+          addBox(tx, 0.40, tz, 0.10, 0.74, 0.10, '#242424', 0);
+          addBox(tx, 0.78, tz, 0.78, 0.06, 0.78, '#c28848', 4);
+          addBox(tx - 0.60, 0.42, tz, 0.42, 0.74, 0.42, '#ad763a', 4);
+          addBox(tx + 0.60, 0.42, tz, 0.42, 0.74, 0.42, '#ad763a', 4);
+        }
+        addBox(4.1, 0.38, -2.6, 0.95, 0.72, 0.22, '#3d4045', 0);
+        addBox(4.1, 0.38, -0.2, 0.95, 0.72, 0.22, '#3d4045', 0);
+        addBox(4.1, 0.78, -1.4, 1.18, 0.12, 3.6, '#50545a', 0);
+        addKetapangTree(4.1, 0.0, -1.3, 4.1, 2.0);
+        for (const sz of [-2.7, -1.9, -0.7, 0.0]) {
+          addBarStool(3.25, 0.0, sz);
+          addBarStool(4.95, 0.0, sz);
         }
 
-        // 5. EXPOSED RED BRICK PERIMETER WALLS (Bata Merah Ekspos + Charcoal Coping)
-        // Left Courtyard Brick Wall
-        addBox(-6.55, 1.15, -0.8, 0.28, 2.3, 7.4, '#a84e34', { mat: 'brick' });
-        addBox(-6.55, 2.34, -0.8, 0.34, 0.12, 7.4, '#2d3033'); // charcoal coping
-        // Front Low Brick Planter DivideWalls flanking the entrance
-        addBox(-4.0, 0.55, -4.35, 4.9, 1.1, 0.26, '#a84e34', { mat: 'brick' });
-        addBox(-1.6, 0.65, -3.55, 0.26, 1.1, 1.6, '#a84e34', { mat: 'brick' });
-        addBox(3.8,  0.55, -4.35, 5.2, 1.1, 0.26, '#a84e34', { mat: 'brick' });
-        addBox(1.25, 0.65, -3.55, 0.26, 1.1, 1.6, '#a84e34', { mat: 'brick' });
-        // Right Courtyard Brick Wall
-        addBox(6.55, 1.15, -0.8, 0.28, 2.3, 7.4, '#a84e34', { mat: 'brick' });
-        addBox(6.55, 2.34, -0.8, 0.34, 0.12, 7.4, '#2d3033');
+        addBox(-6.6, 1.15, -0.7, 0.28, 2.3, 7.4, '#a84e34', 1);
+        addBox(-6.6, 2.34, -0.7, 0.34, 0.12, 7.4, '#2b2e32', 0);
+        addBox(6.6,  1.15, -0.7, 0.28, 2.3, 7.4, '#a84e34', 1);
+        addBox(6.6,  2.34, -0.7, 0.34, 0.12, 7.4, '#2b2e32', 0);
+        addBox(-4.0, 0.55, -4.25, 4.9, 1.1, 0.26, '#a84e34', 1);
+        addBox(-1.6, 0.65, -3.45, 0.26, 1.1, 1.6, '#a84e34', 1);
+        addBox(3.8,  0.55, -4.25, 5.2, 1.1, 0.26, '#a84e34', 1);
+        addBox(1.25, 0.65, -3.45, 0.26, 1.1, 1.6, '#a84e34', 1);
 
-        // 6. 3-TIER RIVER STONE (BATU KALI) TERRACED AMPHITHEATER (Z: +2.8 to +8.4)
-        // Strictly preserving existing batu kali retaining walls & right-side staircase (X: +4.6 to +6.4)
-        // Tier 1 (EL +1.0m, Z: 2.8 to 4.6)
-        addBox(-0.9, 0.50, 3.7, 10.8, 1.0, 1.8, '#78736a', { mat: 'stone' });
-        addBox(-0.9, 1.04, 3.7, 10.8, 0.10, 1.85, '#3b3e42'); // dark charcoal concrete deck
-        addBox(-0.9, 1.24, 4.2, 9.6, 0.32, 0.60, '#2e3136'); // dark amphitheater bench
-        ledStrips.push({ x1: -5.6, x2: 3.8, y: 0.98, z: 2.78 });
+        addBox(-0.9, 0.50, 3.7, 10.8, 1.0, 1.8, '#78736a', 2);
+        addBox(-0.9, 1.04, 3.7, 10.8, 0.10, 1.85, '#3b3e42', 0);
+        addBox(-0.9, 1.24, 4.2, 9.6, 0.32, 0.60, '#2b2e33', 0);
+        addBox(-0.9, 0.98, 2.78, 9.4, 0.035, 0.04, '#ffe29a', 8);
 
-        // Tier 2 (EL +2.0m, Z: 4.6 to 6.4)
-        addBox(-0.9, 1.00, 5.5, 10.8, 2.0, 1.8, '#736e65', { mat: 'stone' });
-        addBox(-0.9, 2.04, 5.5, 10.8, 0.10, 1.85, '#3b3e42');
-        addBox(-0.9, 2.24, 6.0, 9.6, 0.32, 0.60, '#2e3136');
-        ledStrips.push({ x1: -5.6, x2: 3.8, y: 1.98, z: 4.58 });
+        addBox(-0.9, 1.00, 5.5, 10.8, 2.0, 1.8, '#736e65', 2);
+        addBox(-0.9, 2.04, 5.5, 10.8, 0.10, 1.85, '#3b3e42', 0);
+        addBox(-0.9, 2.24, 6.0, 9.6, 0.32, 0.60, '#2b2e33', 0);
+        addBox(-0.9, 1.98, 4.58, 9.4, 0.035, 0.04, '#ffe29a', 8);
 
-        // Tier 3 (EL +3.0m, Z: 6.4 to 8.2)
-        addBox(-0.9, 1.50, 7.3, 10.8, 3.0, 1.8, '#6e6960', { mat: 'stone' });
-        addBox(-0.9, 3.04, 7.3, 10.8, 0.10, 1.85, '#3b3e42');
-        addBox(-0.9, 3.24, 7.8, 9.6, 0.32, 0.60, '#2e3136');
-        ledStrips.push({ x1: -5.6, x2: 3.8, y: 2.98, z: 6.38 });
+        addBox(-0.9, 1.50, 7.3, 10.8, 3.0, 1.8, '#6e6960', 2);
+        addBox(-0.9, 3.04, 7.3, 10.8, 0.10, 1.85, '#3b3e42', 0);
+        addBox(-0.9, 3.24, 7.8, 9.6, 0.32, 0.60, '#2b2e33', 0);
+        addBox(-0.9, 2.98, 6.38, 9.4, 0.035, 0.04, '#ffe29a', 8);
 
-        // Upper Stepped Exposed Red Brick Boundary Walls around Terraces
-        addBox(0.0, 4.25, 8.35, 13.4, 2.4, 0.28, '#a84e34', { mat: 'brick' });
-        addBox(0.0, 5.48, 8.35, 13.5, 0.12, 0.34, '#2d3033'); // charcoal coping
-        // Matte Black Sign Panel on Back Brick Wall
-        addBox(-0.9, 4.35, 8.18, 3.4, 0.68, 0.08, '#1e2022', {
-          isSign: true,
-          label: 'Cenghar Express',
-          signColor: '#FAF5EC'
-        });
-        // Stepped Left & Right Brick Walls for Terraces
-        addBox(-6.55, 2.6, 4.6, 0.28, 2.6, 3.6, '#a84e34', { mat: 'brick' });
-        addBox(-6.55, 3.8, 7.3, 0.28, 2.8, 2.0, '#a84e34', { mat: 'brick' });
-        addBox(6.55,  2.6, 4.6, 0.28, 2.6, 3.6, '#a84e34', { mat: 'brick' });
-        addBox(6.55,  3.8, 7.3, 0.28, 2.8, 2.0, '#a84e34', { mat: 'brick' });
+        addBox(0.0, 4.25, 8.35, 13.4, 2.4, 0.28, '#a84e34', 1);
+        addBox(0.0, 5.48, 8.35, 13.5, 0.12, 0.34, '#2b2e32', 0);
+        addBox(-6.6, 2.6, 4.6, 0.28, 2.6, 3.6, '#a84e34', 1);
+        addBox(-6.6, 3.8, 7.3, 0.28, 2.8, 2.0, '#a84e34', 1);
+        addBox(6.6,  2.6, 4.6, 0.28, 2.6, 3.6, '#a84e34', 1);
+        addBox(6.6,  3.8, 7.3, 0.28, 2.8, 2.0, '#a84e34', 1);
 
-        // Right-Side Stepped Staircase (X: +4.6 to +6.4, Z: +2.6 to +8.0)
-        const stepsCount = 12;
-        for (let i = 0; i < stepsCount; i++) {
-          const t = i / (stepsCount - 1);
+        for (let i = 0; i < 12; i++) {
+          const t = i / 11;
           const sy = 0.25 + t * 2.80;
           const sz = 2.75 + t * 5.1;
-          addBox(5.45, sy / 2, sz, 1.75, sy, 0.48, '#b4b0a8');
-          ledStrips.push({ x1: 4.62, x2: 6.28, y: sy + 0.02, z: sz - 0.23 });
+          addBox(5.45, sy / 2, sz, 1.75, sy, 0.48, '#b6b2aa', 0);
+          addBox(5.45, sy + 0.02, sz - 0.23, 1.65, 0.035, 0.03, '#ffe29a', 8);
         }
 
-        // 7. LUSH TROPICAL LANDSCAPING (Calathea Lutea Borders + Ketapang Kencana Trees)
-        addCalatheaRow(-5.9, -3.6, -5.9, 0.4, 0.0, 7);   // Left brick wall border
-        addCalatheaRow(-5.5, -4.75, -2.1, -4.75, -0.8, 6); // Front-left entrance border
-        addCalatheaRow(1.6, -4.75, 5.5, -4.75, -0.8, 6);   // Front-right entrance border
-        addCalatheaRow(5.9, -3.6, 5.9, 1.2, 0.0, 8);     // Right brick wall border
-        addCalatheaRow(-5.2, 7.9, 3.2, 7.9, 3.1, 8);     // Top terrace back border
+        for (let z = -3.4; z <= 0.4; z += 0.9) addCalatheaBush(-5.95, 0.0, z);
+        for (let z = -3.4; z <= 1.2; z += 0.9) addCalatheaBush(5.95, 0.0, z);
+        for (let x = -5.4; x <= -2.2; x += 0.9) addCalatheaBush(x, -0.8, -4.65);
+        for (let x = 1.6; x <= 5.4; x += 0.9) addCalatheaBush(x, -0.8, -4.65);
 
-        // Additional Ketapang Kencana Shade Trees
-        addKetapangTree(-5.2, 0.0, -3.5, 3.5, 1.6);
-        addKetapangTree(2.8, 2.0, 5.2, 3.8, 1.8);
-        addKetapangTree(-4.2, 3.0, 7.1, 3.6, 1.7);
+        addKetapangTree(-5.2, 0.0, -3.4, 3.5, 1.5);
+        addKetapangTree(2.8, 2.0, 5.2, 3.8, 1.7);
+        addKetapangTree(-4.2, 3.0, 7.0, 3.6, 1.6);
 
-        // 8. BLACK POLE GLOBE GARDEN LAMPS (Frosted White Glass Spheres)
-        addGlobeLamp(-1.6, 0.0, -3.8, 0.3, 0.8);
-        addGlobeLamp(1.25, 0.0, -3.8, -0.3, 0.8);
-        addGlobeLamp(-5.8, 0.0, -2.2, 0.8, 0.0);
-        addGlobeLamp(5.8, 0.0, -2.2, -0.8, 0.0);
-        addGlobeLamp(4.4, 1.0, 3.4, -0.8, 0.0);
-        addGlobeLamp(4.4, 2.8, 6.8, -0.8, 0.0);
+        addGlobeLamp(-1.6, 0.0, -3.7, 0.3, 0.8);
+        addGlobeLamp(1.25, 0.0, -3.7, -0.3, 0.8);
+        addGlobeLamp(-5.8, 0.0, -2.0, 0.8, 0.0);
+        addGlobeLamp(5.8,  0.0, -2.0, -0.8, 0.0);
+        addGlobeLamp(4.4,  1.0, 3.4, -0.8, 0.0);
+        addGlobeLamp(4.4,  2.8, 6.8, -0.8, 0.0);
       }
 
-      // Camera Basis (Guaranteed Above Ground Looking Down)
+      buildSceneGeometry();
+
+      const vbo = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+
+      const stride = 12 * 4;
+      const bindAttr = (name, size, offset) => {
+        const loc = gl.getAttribLocation(prog, name);
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, offset * 4);
+      };
+      bindAttr('aPos', 3, 0);
+      bindAttr('aNorm', 3, 3);
+      bindAttr('aUV', 2, 6);
+      bindAttr('aCol', 3, 8);
+      bindAttr('aMat', 1, 11);
+
+      const uProj = gl.getUniformLocation(prog, 'uProj');
+      const uView = gl.getUniformLocation(prog, 'uView');
+      const uCamPos = gl.getUniformLocation(prog, 'uCamPos');
+      const uSunDir = gl.getUniformLocation(prog, 'uSunDir');
+      const uSunCol = gl.getUniformLocation(prog, 'uSunCol');
+      const uSkyAmb = gl.getUniformLocation(prog, 'uSkyAmb');
+      const uGndAmb = gl.getUniformLocation(prog, 'uGndAmb');
+      const uLightOn = gl.getUniformLocation(prog, 'uLightOn');
+      const uTime = gl.getUniformLocation(prog, 'uTime');
+
+      function perspective(fov, aspect, near, far) {
+        const f = 1.0 / Math.tan(fov / 2);
+        const nf = 1 / (near - far);
+        return new Float32Array([
+          f / aspect, 0, 0, 0,
+          0, f, 0, 0,
+          0, 0, (far + near) * nf, -1,
+          0, 0, 2 * far * near * nf, 0
+        ]);
+      }
+
       function getCameraBasis() {
         const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
         const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
-
-        const pos = {
-          x: cam.target.x + cam.dist * cp * sy,
-          y: cam.target.y + cam.dist * sp,
-          z: cam.target.z - cam.dist * cp * cy
-        };
-        const F = { x: -cp * sy, y: -sp, z: cp * cy };
-        const R = { x: cy, y: 0, z: sy };
-        const U = { x: -sp * sy, y: cp, z: sp * cy };
-        return { pos, F, R, U };
-      }
-
-      function project(x, y, z, width, height, basis) {
-        const vx = x - basis.pos.x;
-        const vy = y - basis.pos.y;
-        const vz = z - basis.pos.z;
-
-        const camX = vx * basis.R.x + vy * basis.R.y + vz * basis.R.z;
-        const camY = vx * basis.U.x + vy * basis.U.y + vz * basis.U.z;
-        const camZ = vx * basis.F.x + vy * basis.F.y + vz * basis.F.z;
-
-        const fov = Math.min(width, height) * 1.18;
-        if (camZ <= 0.4) return null;
-        const scale = fov / camZ;
-        return {
-          sx: width / 2 + camX * scale,
-          sy: height / 2 - camY * scale,
-          depth: camZ,
-          scale
-        };
-      }
-
-      function hexToRgb(hex) {
-        const v = parseInt(hex.slice(1), 16);
-        return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
-      }
-
-      function shadeColor(hex, intensity, tint, alpha = 1) {
-        const [r, g, b] = hexToRgb(hex);
-        const nr = Math.min(255, Math.max(0, Math.round(r * intensity * tint[0])));
-        const ng = Math.min(255, Math.max(0, Math.round(g * intensity * tint[1])));
-        const nb = Math.min(255, Math.max(0, Math.round(b * intensity * tint[2])));
-        return alpha < 1 ? `rgba(${nr},${ng},${nb},${alpha})` : `rgb(${nr},${ng},${nb})`;
-      }
-
-      function getLightingConfig() {
-        if (lightMode === 'day') {
-          return {
-            skyTop: '#6aa4d9',
-            skyBottom: '#d9e8f5',
-            sun: { x: 0.48, y: 0.80, z: -0.36 },
-            ambient: 0.62,
-            tint: [1.0, 1.0, 1.0],
-            lightsOn: false
-          };
-        }
-        if (lightMode === 'night') {
-          return {
-            skyTop: '#0b1324',
-            skyBottom: '#1c2b48',
-            sun: { x: -0.35, y: 0.75, z: -0.5 },
-            ambient: 0.36,
-            tint: [0.76, 0.84, 1.04],
-            lightsOn: true
-          };
-        }
-        // Golden hour (default)
-        return {
-          skyTop: '#4a6891',
-          skyBottom: '#ebba88',
-          sun: { x: -0.65, y: 0.54, z: -0.52 },
-          ambient: 0.52,
-          tint: [1.06, 0.96, 0.88],
-          lightsOn: true
-        };
-      }
-
-      const FACES = [
-        { idx: [0, 1, 2, 3], n: [0, 0, -1] }, // front (-z)
-        { idx: [5, 4, 7, 6], n: [0, 0, 1]  }, // back (+z)
-        { idx: [4, 0, 3, 7], n: [-1, 0, 0] }, // left (-x)
-        { idx: [1, 5, 6, 2], n: [1, 0, 0]  }, // right (+x)
-        { idx: [3, 2, 6, 7], n: [0, 1, 0]  }, // top (+y)
-        { idx: [4, 5, 1, 0], n: [0, -1, 0] }  // bottom (-y)
-      ];
-
-      // Draw surface material detail lines (corrugation ribs, brick courses, wood planks, water ripples)
-      function drawSurfaceDetail(pts, mat, faceNormal, light) {
-        if (!mat) return;
-        ctx.save();
-        // Clip to polygon
-        ctx.beginPath();
-        ctx.moveTo(pts[0].sx, pts[0].sy);
-        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].sx, pts[i].sy);
-        ctx.closePath();
-        ctx.clip();
-
-        if (mat === 'container' && faceNormal[1] === 0) {
-          // Vertical corrugated metal ribs
-          ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-          ctx.lineWidth = 1;
-          const ribs = 16;
-          for (let i = 1; i < ribs; i++) {
-            const t = i / ribs;
-            const xTop = pts[3].sx + (pts[2].sx - pts[3].sx) * t;
-            const yTop = pts[3].sy + (pts[2].sy - pts[3].sy) * t;
-            const xBot = pts[0].sx + (pts[1].sx - pts[0].sx) * t;
-            const yBot = pts[0].sy + (pts[1].sy - pts[0].sy) * t;
-            ctx.beginPath();
-            ctx.moveTo(xTop, yTop);
-            ctx.lineTo(xBot, yBot);
-            ctx.stroke();
-          }
-        } else if (mat === 'brick' && faceNormal[1] === 0) {
-          // Horizontal terracotta brick mortar courses
-          ctx.strokeStyle = 'rgba(235, 215, 195, 0.22)';
-          ctx.lineWidth = 0.8;
-          const rows = 7;
-          for (let i = 1; i < rows; i++) {
-            const t = i / rows;
-            const xL = pts[0].sx + (pts[3].sx - pts[0].sx) * t;
-            const yL = pts[0].sy + (pts[3].sy - pts[0].sy) * t;
-            const xR = pts[1].sx + (pts[2].sx - pts[1].sx) * t;
-            const yR = pts[1].sy + (pts[2].sy - pts[1].sy) * t;
-            ctx.beginPath();
-            ctx.moveTo(xL, yL);
-            ctx.lineTo(xR, yR);
-            ctx.stroke();
-          }
-        } else if (mat === 'stone' && faceNormal[1] === 0) {
-          // River stone (batu kali) organic mortar texture lines
-          ctx.strokeStyle = 'rgba(30, 28, 25, 0.28)';
-          ctx.lineWidth = 1.1;
-          const rows = 4;
-          for (let i = 1; i < rows; i++) {
-            const t = i / rows;
-            const xL = pts[0].sx + (pts[3].sx - pts[0].sx) * t;
-            const yL = pts[0].sy + (pts[3].sy - pts[0].sy) * t;
-            const xR = pts[1].sx + (pts[2].sx - pts[1].sx) * t;
-            const yR = pts[1].sy + (pts[2].sy - pts[1].sy) * t;
-            ctx.beginPath();
-            ctx.moveTo(xL, yL);
-            ctx.lineTo(xR, yR);
-            ctx.stroke();
-          }
-        } else if ((mat === 'greywood' || mat === 'teakdeck') && faceNormal[1] === 1) {
-          // Wood deck plank lines
-          ctx.strokeStyle = 'rgba(0,0,0,0.16)';
-          ctx.lineWidth = 0.8;
-          const planks = 10;
-          for (let i = 1; i < planks; i++) {
-            const t = i / planks;
-            const x1 = pts[0].sx + (pts[1].sx - pts[0].sx) * t;
-            const y1 = pts[0].sy + (pts[1].sy - pts[0].sy) * t;
-            const x2 = pts[3].sx + (pts[2].sx - pts[3].sx) * t;
-            const y2 = pts[3].sy + (pts[2].sy - pts[3].sy) * t;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-          }
-        } else if (mat === 'water' && faceNormal[1] === 1) {
-          // Shimmering water highlights + underwater glow at night
-          if (light.lightsOn) {
-            ctx.fillStyle = 'rgba(120, 225, 245, 0.28)';
-            ctx.fill();
-          }
-          ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-          ctx.lineWidth = 1.2;
-          for (let i = 1; i <= 4; i++) {
-            const t = ((i * 0.22 + animTime * 0.004) % 0.85) + 0.08;
-            const x1 = pts[0].sx + (pts[3].sx - pts[0].sx) * t;
-            const y1 = pts[0].sy + (pts[3].sy - pts[0].sy) * t;
-            const x2 = pts[1].sx + (pts[2].sx - pts[1].sx) * t;
-            const y2 = pts[1].sy + (pts[2].sy - pts[1].sy) * t;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-          }
-        }
-        ctx.restore();
-      }
-
-      // Draw Blender-style X/Y/Z Orientation Gizmo in Top-Right Corner
-      function drawOrientationGizmo(W, basis) {
-        const gx = W - 46, gy = 46, len = 24;
-        const axes = [
-          { label: 'X', v: [1, 0, 0], color: '#e05260' },
-          { label: 'Y', v: [0, 1, 0], color: '#68c758' },
-          { label: 'Z', v: [0, 0, 1], color: '#4f97e8' }
+        const eye = [
+          cam.target[0] + cam.dist * cp * sy,
+          cam.target[1] + cam.dist * sp,
+          cam.target[2] - cam.dist * cp * cy
         ];
-        ctx.save();
-        ctx.fillStyle = 'rgba(20, 18, 16, 0.55)';
-        ctx.beginPath();
-        ctx.arc(gx, gy, 32, 0, Math.PI * 2);
-        ctx.fill();
-
-        for (const ax of axes) {
-          const sx = gx + (ax.v[0] * basis.R.x + ax.v[1] * basis.R.y + ax.v[2] * basis.R.z) * len;
-          const sy = gy - (ax.v[0] * basis.U.x + ax.v[1] * basis.U.y + ax.v[2] * basis.U.z) * len;
-          ctx.strokeStyle = ax.color;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(gx, gy);
-          ctx.lineTo(sx, sy);
-          ctx.stroke();
-
-          ctx.fillStyle = ax.color;
-          ctx.beginPath();
-          ctx.arc(sx, sy, 6, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 8px system-ui, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(ax.label, sx, sy);
-        }
-        ctx.restore();
+        const F = [-cp * sy, -sp, cp * cy];
+        const R = [cy, 0, sy];
+        const U = [-sp * sy, cp, sp * cy];
+        return { eye, F, R, U };
       }
 
-      function render() {
-        animTime++;
+      function lookAtView(basis) {
+        const { eye, F, R, U } = basis;
+        return new Float32Array([
+          R[0], U[0], -F[0], 0,
+          R[1], U[1], -F[1], 0,
+          R[2], U[2], -F[2], 0,
+          -(R[0]*eye[0] + R[1]*eye[1] + R[2]*eye[2]),
+          -(U[0]*eye[0] + U[1]*eye[1] + U[2]*eye[2]),
+          (F[0]*eye[0] + F[1]*eye[1] + F[2]*eye[2]),
+          1
+        ]);
+      }
+
+      function project3DToHUD(pt, W, H, basis, aspect) {
+        const vx = pt[0] - basis.eye[0], vy = pt[1] - basis.eye[1], vz = pt[2] - basis.eye[2];
+        const cx = vx * basis.R[0] + vy * basis.R[1] + vz * basis.R[2];
+        const cy = vx * basis.U[0] + vy * basis.U[1] + vz * basis.U[2];
+        const cz = vx * basis.F[0] + vy * basis.F[1] + vz * basis.F[2];
+        if (cz <= 0.4) return null;
+        const f = 1.0 / Math.tan(0.78 / 2);
+        return {
+          x: (W / 2) * (1 + (cx * f / aspect) / cz),
+          y: (H / 2) * (1 - (cy * f) / cz)
+        };
+      }
+
+      function renderFrame() {
         const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
-        if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
-          canvas.width = Math.round(rect.width * dpr);
-          canvas.height = Math.round(rect.height * dpr);
+        const rect = glCanvas.getBoundingClientRect();
+        const W = Math.round(rect.width * dpr);
+        const H = Math.round(rect.height * dpr);
+        if (glCanvas.width !== W || glCanvas.height !== H) {
+          glCanvas.width = W; glCanvas.height = H;
+          hudCanvas.width = W; hudCanvas.height = H;
         }
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        const W = rect.width;
-        const H = rect.height;
+        gl.viewport(0, 0, W, H);
+        gl.enable(gl.DEPTH_TEST);
 
-        const light = getLightingConfig();
+        let bg, sunDir, sunCol, skyAmb, gndAmb, lightOn;
+        if (lightMode === 'day') {
+          bg = [0.68, 0.82, 0.94];
+          sunDir = [0.48, 0.80, -0.35];
+          sunCol = [1.05, 1.02, 0.96];
+          skyAmb = [0.58, 0.68, 0.80];
+          gndAmb = [0.35, 0.33, 0.30];
+          lightOn = 0.0;
+        } else if (lightMode === 'night') {
+          bg = [0.07, 0.11, 0.20];
+          sunDir = [-0.30, 0.75, -0.45];
+          sunCol = [0.16, 0.22, 0.38];
+          skyAmb = [0.14, 0.20, 0.34];
+          gndAmb = [0.08, 0.09, 0.12];
+          lightOn = 1.0;
+        } else {
+          bg = [0.42, 0.54, 0.70];
+          sunDir = [-0.62, 0.52, -0.58];
+          sunCol = [1.18, 0.88, 0.62];
+          skyAmb = [0.52, 0.52, 0.62];
+          gndAmb = [0.32, 0.27, 0.24];
+          lightOn = 0.82;
+        }
+
+        gl.clearColor(bg[0], bg[1], bg[2], 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
         const basis = getCameraBasis();
+        const aspect = rect.width / rect.height;
+        gl.uniformMatrix4fv(uProj, false, perspective(0.78, aspect, 0.5, 90.0));
+        gl.uniformMatrix4fv(uView, false, lookAtView(basis));
+        gl.uniform3fv(uCamPos, basis.eye);
+        gl.uniform3fv(uSunDir, sunDir);
+        gl.uniform3fv(uSunCol, sunCol);
+        gl.uniform3fv(uSkyAmb, skyAmb);
+        gl.uniform3fv(uGndAmb, gndAmb);
+        gl.uniform1f(uLightOn, lightOn);
+        gl.uniform1f(uTime, (performance.now() - startTime) * 0.001);
 
-        // Sky Gradient
-        const grad = ctx.createLinearGradient(0, 0, 0, H);
-        grad.addColorStop(0, light.skyTop);
-        grad.addColorStop(1, light.skyBottom);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, W, H);
+        gl.drawArrays(gl.TRIANGLES, 0, verts.length / 12);
 
-        const drawList = [];
+        hud.setTransform(dpr, 0, 0, dpr, 0, 0);
+        hud.clearRect(0, 0, rect.width, rect.height);
+        pinHitBoxes = [];
 
-        // 0. Soft Ground Shadows
-        for (const sh of groundShadows) {
-          const hw = sh.w / 2, hd = sh.d / 2;
-          const ox = 0.25, oz = -0.22; // sun shadow offset
-          const pts = [
-            project(sh.x - hw + ox, sh.y, sh.z - hd + oz, W, H, basis),
-            project(sh.x + hw + ox, sh.y, sh.z - hd + oz, W, H, basis),
-            project(sh.x + hw + ox, sh.y, sh.z + hd + oz, W, H, basis),
-            project(sh.x - hw + ox, sh.y, sh.z + hd + oz, W, H, basis)
-          ];
-          if (pts.some(p => !p)) continue;
-          const avgDepth = (pts[0].depth + pts[1].depth + pts[2].depth + pts[3].depth) / 4 + 0.15;
-          drawList.push({ type: 'shadow', depth: avgDepth, pts });
-        }
-
-        // 1. 3D Boxes with Exact View-Space Backface Culling & Material Shading
-        for (const b of boxes) {
-          const hw = b.w / 2, hh = b.h / 2, hd = b.d / 2;
-          const verts = [
-            [b.x - hw, b.y - hh, b.z - hd],
-            [b.x + hw, b.y - hh, b.z - hd],
-            [b.x + hw, b.y + hh, b.z - hd],
-            [b.x - hw, b.y + hh, b.z - hd],
-            [b.x - hw, b.y - hh, b.z + hd],
-            [b.x + hw, b.y - hh, b.z + hd],
-            [b.x + hw, b.y + hh, b.z + hd],
-            [b.x - hw, b.y + hh, b.z + hd]
-          ];
-          const pVerts = verts.map(v => project(v[0], v[1], v[2], W, H, basis));
-          if (pVerts.some(p => !p)) continue;
-
-          for (const f of FACES) {
-            const fcX = b.x + f.n[0] * hw;
-            const fcY = b.y + f.n[1] * hh;
-            const fcZ = b.z + f.n[2] * hd;
-            const facing = f.n[0] * (basis.pos.x - fcX) + f.n[1] * (basis.pos.y - fcY) + f.n[2] * (basis.pos.z - fcZ);
-            if (facing <= 0) continue;
-
-            const pts = f.idx.map(i => pVerts[i]);
-            const avgDepth = (pts[0].depth + pts[1].depth + pts[2].depth + pts[3].depth) / 4;
-            const dot = Math.max(0, f.n[0] * light.sun.x + f.n[1] * light.sun.y + f.n[2] * light.sun.z);
-            const intensity = light.ambient + dot * (1 - light.ambient) * 0.88;
-            const alpha = b.mat === 'glass' ? 0.42 : 1.0;
-
-            drawList.push({
-              type: 'poly',
-              depth: avgDepth - (b.mat === 'glass' ? 0.12 : 0),
-              pts,
-              fill: shadeColor(b.color, intensity, light.tint, alpha),
-              stroke: b.mat === 'terrain' ? 'transparent' : (lightMode === 'night' ? 'rgba(12,16,26,0.38)' : 'rgba(32,28,24,0.16)'),
-              mat: b.mat,
-              faceNormal: f.n,
-              sign: b.isSign && (f.n[2] === -1 || f.n[2] === 1) ? { label: b.label, color: b.signColor } : null
-            });
-          }
-        }
-
-        // 2. Round Wooden Bar Stools (3D Cylinders + Angled Legs)
-        for (const s of cylinders) {
-          const pTop = project(s.x, s.y + s.h, s.z, W, H, basis);
-          const pBot = project(s.x, s.y, s.z, W, H, basis);
-          if (!pTop || !pBot) continue;
-          drawList.push({
-            type: 'stool',
-            depth: pTop.depth,
-            pTop, pBot,
-            rx: Math.max(3, s.r * pTop.scale),
-            ry: Math.max(1.8, s.r * pTop.scale * Math.max(0.25, Math.sin(cam.pitch))),
-            topColor: s.topColor,
-            legColor: s.legColor
-          });
-        }
-
-        // 3. Organic Tropical Foliage (Ketapang Kencana Canopy Layers & Calathea Lutea Leaves)
-        for (const fl of foliageClusters) {
-          const p = project(fl.x, fl.y, fl.z, W, H, basis);
+        for (const lb of LABELS_3D) {
+          const p = project3DToHUD(lb.pos, rect.width, rect.height, basis, aspect);
           if (!p) continue;
-          drawList.push({
-            type: 'foliage',
-            depth: p.depth,
-            kind: fl.kind,
-            sx: p.sx,
-            sy: p.sy,
-            rx: fl.r * p.scale * 0.72,
-            ry: fl.ry * p.scale * 0.72
-          });
-        }
-
-        // 4. Frosted White Glass Globe Lamps
-        for (const gl of globeLamps) {
-          const p = project(gl.x, gl.y, gl.z, W, H, basis);
-          if (!p) continue;
-          drawList.push({
-            type: 'globe',
-            depth: p.depth - 0.08,
-            sx: p.sx,
-            sy: p.sy,
-            r: Math.max(3.5, gl.r * p.scale),
-            on: light.lightsOn
-          });
-        }
-
-        // 5. Warm LED Strips (Under-counter bar glow, interior shelves, terrace steps)
-        for (const ls of ledStrips) {
-          const p1 = project(ls.x1, ls.y, ls.z, W, H, basis);
-          const p2 = project(ls.x2, ls.y, ls.z, W, H, basis);
-          if (!p1 || !p2) continue;
-          drawList.push({
-            type: 'led',
-            depth: (p1.depth + p2.depth) / 2 - 0.1,
-            p1, p2,
-            strong: light.lightsOn
-          });
-        }
-
-        // Painter's depth sort
-        drawList.sort((a, b) => b.depth - a.depth);
-
-        // Execute Draw Pass
-        for (const item of drawList) {
-          if (item.type === 'shadow') {
-            ctx.beginPath();
-            ctx.moveTo(item.pts[0].sx, item.pts[0].sy);
-            for (let i = 1; i < item.pts.length; i++) ctx.lineTo(item.pts[i].sx, item.pts[i].sy);
-            ctx.closePath();
-            ctx.fillStyle = 'rgba(15, 18, 22, 0.22)';
-            ctx.fill();
-          } else if (item.type === 'poly') {
-            ctx.beginPath();
-            ctx.moveTo(item.pts[0].sx, item.pts[0].sy);
-            for (let i = 1; i < item.pts.length; i++) ctx.lineTo(item.pts[i].sx, item.pts[i].sy);
-            ctx.closePath();
-            ctx.fillStyle = item.fill;
-            ctx.fill();
-
-            if (item.mat) {
-              drawSurfaceDetail(item.pts, item.mat, item.faceNormal, light);
-            }
-
-            if (item.stroke !== 'transparent') {
-              ctx.strokeStyle = item.stroke;
-              ctx.lineWidth = 0.7;
-              ctx.stroke();
-            }
-
-            if (item.sign) {
-              const cx = (item.pts[0].sx + item.pts[2].sx) / 2;
-              const cy = (item.pts[0].sy + item.pts[2].sy) / 2;
-              ctx.save();
-              ctx.font = 'bold 10px Georgia, serif';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillStyle = item.sign.color || '#FAF5EC';
-              ctx.fillText(item.sign.label, cx, cy);
-              ctx.restore();
-            }
-          } else if (item.type === 'stool') {
-            // Stool legs
-            ctx.strokeStyle = item.legColor;
-            ctx.lineWidth = 1.6;
-            const spread = item.rx * 0.75;
-            for (const dx of [-spread, 0, spread]) {
-              ctx.beginPath();
-              ctx.moveTo(item.pTop.sx + dx * 0.4, item.pTop.sy);
-              ctx.lineTo(item.pBot.sx + dx, item.pBot.sy);
-              ctx.stroke();
-            }
-            // Round wooden seat top
-            ctx.fillStyle = item.topColor;
-            ctx.beginPath();
-            ctx.ellipse(item.pTop.sx, item.pTop.sy, item.rx, item.ry, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-          } else if (item.type === 'foliage') {
-            if (item.kind === 'ketapang') {
-              // Layered horizontal pagoda canopy clusters
-              const cDark = lightMode === 'night' ? '#1c3625' : '#2d5a34';
-              const cMid  = lightMode === 'night' ? '#274a33' : '#437c49';
-              const cLite = lightMode === 'night' ? '#325c40' : '#5e9c5e';
-              const puffs = [
-                { dx: -0.45, dy: 0.05, s: 0.65, c: cDark },
-                { dx: 0.45,  dy: 0.05, s: 0.65, c: cDark },
-                { dx: 0,     dy: 0.1,  s: 0.75, c: cMid },
-                { dx: -0.22, dy: -0.15,s: 0.60, c: cLite },
-                { dx: 0.22,  dy: -0.15,s: 0.58, c: cLite }
-              ];
-              for (const pf of puffs) {
-                ctx.fillStyle = pf.c;
-                ctx.beginPath();
-                ctx.ellipse(
-                  item.sx + pf.dx * item.rx,
-                  item.sy + pf.dy * item.ry,
-                  item.rx * pf.s,
-                  item.ry * pf.s,
-                  0, 0, Math.PI * 2
-                );
-                ctx.fill();
-              }
-            } else {
-              // Calathea Lutea broad upright tropical leaves
-              const leafColors = lightMode === 'night'
-                ? ['#1e3d28', '#295236', '#336341']
-                : ['#326337', '#468247', '#5da158'];
-              const angles = [-0.55, -0.25, 0, 0.25, 0.55];
-              angles.forEach((ang, idx) => {
-                ctx.save();
-                ctx.translate(item.sx, item.sy + item.ry * 0.3);
-                ctx.rotate(ang);
-                ctx.fillStyle = leafColors[idx % leafColors.length];
-                ctx.beginPath();
-                ctx.ellipse(0, -item.ry * 0.55, item.rx * 0.34, item.ry * 0.62, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-              });
-            }
-          } else if (item.type === 'globe') {
-            if (item.on) {
-              const g = ctx.createRadialGradient(item.sx, item.sy, 0, item.sx, item.sy, item.r * 3.8);
-              g.addColorStop(0, 'rgba(255, 240, 185, 0.95)');
-              g.addColorStop(0.45, 'rgba(255, 200, 100, 0.38)');
-              g.addColorStop(1, 'rgba(255, 190, 80, 0)');
-              ctx.fillStyle = g;
-              ctx.beginPath();
-              ctx.arc(item.sx, item.sy, item.r * 3.8, 0, Math.PI * 2);
-              ctx.fill();
-            }
-            ctx.fillStyle = item.on ? '#fff9e6' : '#f0f2f5';
-            ctx.beginPath();
-            ctx.arc(item.sx, item.sy, item.r, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(0,0,0,0.22)';
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-          } else if (item.type === 'led') {
-            ctx.save();
-            ctx.strokeStyle = item.strong ? 'rgba(255, 206, 105, 0.95)' : 'rgba(255, 206, 105, 0.65)';
-            ctx.lineWidth = item.strong ? 2.6 : 1.8;
-            if (item.strong) {
-              ctx.shadowColor = '#ffb84d';
-              ctx.shadowBlur = 8;
-            }
-            ctx.beginPath();
-            ctx.moveTo(item.p1.sx, item.p1.sy);
-            ctx.lineTo(item.p2.sx, item.p2.sy);
-            ctx.stroke();
-            ctx.restore();
-          }
-        }
-
-        // Draw Interactive 3D Hotspot Labels
-        clickableHotspotRects = [];
-        if (showHotspots) {
-          for (const hs of HOTSPOTS) {
-            const p = project(hs.x, hs.y, hs.z, W, H, basis);
-            if (!p) continue;
-            ctx.save();
-            ctx.font = '600 11px system-ui, sans-serif';
-            const tw = ctx.measureText(hs.label).width;
+          if (lb.isSign) {
+            hud.font = 'bold 10px Georgia, serif';
+            hud.textAlign = 'center';
+            hud.textBaseline = 'middle';
+            hud.fillStyle = '#1a1a1a';
+            hud.fillText(lb.text, p.x, p.y);
+          } else if (lb.isPin && showPins) {
+            hud.font = '600 11px system-ui, sans-serif';
+            const tw = hud.measureText(lb.text).width;
             const bw = tw + 16, bh = 22;
-            const bx = p.sx - bw / 2, by = p.sy - bh - 8;
+            const bx = p.x - bw / 2, by = p.y - bh - 6;
 
-            // Pin stem
-            ctx.strokeStyle = 'rgba(250,245,236,0.75)';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(p.sx, p.sy);
-            ctx.lineTo(p.sx, by + bh);
-            ctx.stroke();
+            hud.fillStyle = 'rgba(20, 18, 16, 0.84)';
+            hud.strokeStyle = '#8B1E2D';
+            hud.lineWidth = 1.2;
+            hud.beginPath();
+            hud.roundRect(bx, by, bw, bh, 6);
+            hud.fill();
+            hud.stroke();
 
-            // Pin badge
-            ctx.fillStyle = 'rgba(24, 22, 20, 0.82)';
-            ctx.strokeStyle = '#8B1E2D';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.roundRect(bx, by, bw, bh, 6);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = '#FAF5EC';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(hs.label, p.sx, by + bh / 2);
-            ctx.restore();
-
-            clickableHotspotRects.push({ id: hs.id, x: bx, y: by, w: bw, h: bh });
+            hud.fillStyle = '#FAF5EC';
+            hud.textAlign = 'center';
+            hud.textBaseline = 'middle';
+            hud.fillText(lb.text, p.x, by + bh / 2);
+            pinHitBoxes.push({ id: lb.id, x: bx, y: by, w: bw, h: bh });
           }
         }
-
-        // Draw Top-Right 3D Axis Orientation Gizmo
-        drawOrientationGizmo(W, basis);
       }
 
-      // Pan helper in camera plane
-      function panCamera(dxScreen, dyScreen) {
+      function panCamera(dx, dy) {
         const basis = getCameraBasis();
-        const panSpeed = cam.dist * 0.0016;
-        // Move target along camera Right (R) and horizontal Forward projection
-        const fwdXZLen = Math.hypot(basis.F.x, basis.F.z) || 1;
-        const fwdX = basis.F.x / fwdXZLen;
-        const fwdZ = basis.F.z / fwdXZLen;
-
-        targetCam.target.x = Math.max(-7, Math.min(7, targetCam.target.x - dxScreen * basis.R.x * panSpeed + dyScreen * fwdX * panSpeed));
-        targetCam.target.z = Math.max(-8, Math.min(8, targetCam.target.z - dxScreen * basis.R.z * panSpeed + dyScreen * fwdZ * panSpeed));
+        const s = cam.dist * 0.0016;
+        const fl = Math.hypot(basis.F[0], basis.F[2]) || 1;
+        const fx = basis.F[0] / fl, fz = basis.F[2] / fl;
+        targetCam.target[0] = Math.max(-7, Math.min(7, targetCam.target[0] - dx * basis.R[0] * s + dy * fx * s));
+        targetCam.target[2] = Math.max(-7, Math.min(7, targetCam.target[2] - dx * basis.R[2] * s + dy * fz * s));
       }
 
-      // Animation Loop
       const yawSlider = document.getElementById('yawSlider');
-      const angleReadout = document.getElementById('angleReadout');
-
-      function updateYawUI() {
+      const degLabel = document.getElementById('degLabel');
+      function syncSlider() {
         let deg = Math.round((targetCam.yaw * 180) / Math.PI) % 360;
         if (deg > 180) deg -= 360;
         if (deg < -180) deg += 360;
         yawSlider.value = deg;
-        const normDeg = ((deg % 360) + 360) % 360;
-        angleReadout.textContent = normDeg + '°';
+        degLabel.textContent = (((deg % 360) + 360) % 360) + '°';
       }
 
       function tick() {
         if (autoRotate && !isDragging) {
           targetCam.yaw += 0.0045;
-          updateYawUI();
+          syncSlider();
         }
-        const lerp = 0.12;
-        cam.yaw += (targetCam.yaw - cam.yaw) * lerp;
-        cam.pitch += (targetCam.pitch - cam.pitch) * lerp;
-        cam.dist += (targetCam.dist - cam.dist) * lerp;
-        cam.target.x += (targetCam.target.x - cam.target.x) * lerp;
-        cam.target.y += (targetCam.target.y - cam.target.y) * lerp;
-        cam.target.z += (targetCam.target.z - cam.target.z) * lerp;
-
-        render();
+        const k = 0.12;
+        cam.yaw += (targetCam.yaw - cam.yaw) * k;
+        cam.pitch += (targetCam.pitch - cam.pitch) * k;
+        cam.dist += (targetCam.dist - cam.dist) * k;
+        for (let i = 0; i < 3; i++) cam.target[i] += (targetCam.target[i] - cam.target[i]) * k;
+        renderFrame();
         requestAnimationFrame(tick);
       }
 
-      // Mouse & Touch Drag Controls (Orbit 360° + Pan Geser)
-      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-      canvas.addEventListener('pointerdown', (e) => {
-        // Check if user clicked a 3D hotspot pill
-        const rect = canvas.getBoundingClientRect();
-        const cx = e.clientX - rect.left;
-        const cy = e.clientY - rect.top;
-        for (const hs of clickableHotspotRects) {
-          if (cx >= hs.x && cx <= hs.x + hs.w && cy >= hs.y && cy <= hs.y + hs.h) {
-            setPreset(hs.id);
+      glCanvas.addEventListener('contextmenu', e => e.preventDefault());
+      glCanvas.addEventListener('pointerdown', e => {
+        const rect = glCanvas.getBoundingClientRect();
+        const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+        for (const hb of pinHitBoxes) {
+          if (cx >= hb.x && cx <= hb.x + hb.w && cy >= hb.y && cy <= hb.y + hb.h) {
+            setPreset(hb.id);
             return;
           }
         }
-
         isDragging = true;
-        activeButton = e.button;
+        activeBtn = e.button;
         lastX = e.clientX;
         lastY = e.clientY;
-        canvas.setPointerCapture(e.pointerId);
+        glCanvas.setPointerCapture(e.pointerId);
       });
 
-      canvas.addEventListener('pointermove', (e) => {
+      glCanvas.addEventListener('pointermove', e => {
         if (!isDragging) return;
-        const dx = e.clientX - lastX;
-        const dy = e.clientY - lastY;
-        lastX = e.clientX;
-        lastY = e.clientY;
-
-        const isPanAction = dragMode === 'pan' || activeButton === 2 || e.shiftKey;
-        if (isPanAction) {
+        const dx = e.clientX - lastX, dy = e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
+        if (dragMode === 'pan' || activeBtn === 2 || e.shiftKey) {
           panCamera(dx, dy);
         } else {
           targetCam.yaw -= dx * 0.0085;
-          // Strictly clamp pitch between 10° (0.18 rad) and 80° (1.40 rad) so camera NEVER goes below ground!
-          targetCam.pitch = Math.max(0.18, Math.min(1.40, targetCam.pitch + dy * 0.007));
-          updateYawUI();
+          targetCam.pitch = Math.max(0.18, Math.min(1.38, targetCam.pitch + dy * 0.007));
+          syncSlider();
         }
       });
-
-      canvas.addEventListener('pointerup', () => { isDragging = false; });
-      canvas.addEventListener('pointercancel', () => { isDragging = false; });
-
-      canvas.addEventListener('wheel', (e) => {
+      glCanvas.addEventListener('pointerup', () => { isDragging = false; });
+      glCanvas.addEventListener('pointercancel', () => { isDragging = false; });
+      glCanvas.addEventListener('wheel', e => {
         e.preventDefault();
-        targetCam.dist = Math.max(8.5, Math.min(36, targetCam.dist + e.deltaY * 0.018));
+        targetCam.dist = Math.max(8.0, Math.min(34.0, targetCam.dist + e.deltaY * 0.018));
       }, { passive: false });
 
-      // Mode Toggle Buttons (Orbit vs Pan)
-      const btnModeOrbit = document.getElementById('btnModeOrbit');
-      const btnModePan = document.getElementById('btnModePan');
-
-      btnModeOrbit.addEventListener('click', () => {
+      document.getElementById('modeOrbit').addEventListener('click', (e) => {
         dragMode = 'orbit';
-        btnModeOrbit.classList.add('active');
-        btnModePan.classList.remove('active');
-        canvas.classList.remove('mode-pan');
-        canvas.classList.add('mode-orbit');
+        e.currentTarget.classList.add('btn-active');
+        document.getElementById('modePan').classList.remove('btn-active');
+        glCanvas.className = 'w-full h-full block cursor-orbit';
       });
-
-      btnModePan.addEventListener('click', () => {
+      document.getElementById('modePan').addEventListener('click', (e) => {
         dragMode = 'pan';
-        btnModePan.classList.add('active');
-        btnModeOrbit.classList.remove('active');
-        canvas.classList.remove('mode-orbit');
-        canvas.classList.add('mode-pan');
-      });
-
-      // On-Screen Pan D-Pad & Zoom & 360 Slider
-      document.querySelectorAll('[data-pan]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const dir = btn.dataset.pan;
-          if (dir === 'left')  panCamera(65, 0);
-          if (dir === 'right') panCamera(-65, 0);
-          if (dir === 'up')    panCamera(0, 65);
-          if (dir === 'down')  panCamera(0, -65);
-        });
-      });
-
-      document.getElementById('btnResetCam').addEventListener('click', () => setPreset('overview'));
-      document.getElementById('zoomIn').addEventListener('click', () => {
-        targetCam.dist = Math.max(8.5, targetCam.dist - 3.0);
-      });
-      document.getElementById('zoomOut').addEventListener('click', () => {
-        targetCam.dist = Math.min(36, targetCam.dist + 3.0);
-      });
-
-      yawSlider.addEventListener('input', (e) => {
-        targetCam.yaw = (parseFloat(e.target.value) * Math.PI) / 180;
-        const normDeg = ((parseInt(e.target.value, 10) % 360) + 360) % 360;
-        angleReadout.textContent = normDeg + '°';
-      });
-
-      document.getElementById('autoRotate').addEventListener('change', (e) => {
-        autoRotate = e.target.checked;
-      });
-      document.getElementById('toggleHotspots').addEventListener('change', (e) => {
-        showHotspots = e.target.checked;
-      });
-
-      document.querySelectorAll('[data-light]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('[data-light]').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          lightMode = btn.dataset.light;
-        });
+        e.currentTarget.classList.add('btn-active');
+        document.getElementById('modeOrbit').classList.remove('btn-active');
+        glCanvas.className = 'w-full h-full block cursor-pan';
       });
 
       function setPreset(name) {
         const p = CAM_PRESETS[name];
         if (!p) return;
-        targetCam = { yaw: p.yaw, pitch: p.pitch, dist: p.dist, target: { ...p.target } };
-        updateYawUI();
-        document.querySelectorAll('[data-cam]').forEach(b => {
-          b.classList.toggle('active', b.dataset.cam === name);
-        });
+        targetCam = { yaw: p.yaw, pitch: p.pitch, dist: p.dist, target: [...p.target] };
+        syncSlider();
+        document.querySelectorAll('.cam-btn').forEach(b => b.classList.toggle('btn-active', b.dataset.cam === name));
       }
-
-      document.querySelectorAll('[data-cam]').forEach(btn => {
-        btn.addEventListener('click', () => setPreset(btn.dataset.cam));
+      document.querySelectorAll('.cam-btn').forEach(b => b.addEventListener('click', () => setPreset(b.dataset.cam)));
+      document.querySelectorAll('.light-btn').forEach(b => b.addEventListener('click', () => {
+        lightMode = b.dataset.light;
+        document.querySelectorAll('.light-btn').forEach(x => x.classList.toggle('btn-active', x === b));
+      }));
+      document.querySelectorAll('[data-pan]').forEach(b => b.addEventListener('click', () => {
+        const d = b.dataset.pan;
+        if (d === 'left') panCamera(65, 0);
+        if (d === 'right') panCamera(-65, 0);
+        if (d === 'up') panCamera(0, 65);
+        if (d === 'down') panCamera(0, -65);
+      }));
+      document.getElementById('resetCam').addEventListener('click', () => setPreset('overview'));
+      document.getElementById('zoomIn').addEventListener('click', () => { targetCam.dist = Math.max(8, targetCam.dist - 2.8); });
+      document.getElementById('zoomOut').addEventListener('click', () => { targetCam.dist = Math.min(34, targetCam.dist + 2.8); });
+      yawSlider.addEventListener('input', e => {
+        targetCam.yaw = (parseFloat(e.target.value) * Math.PI) / 180;
+        const deg = parseInt(e.target.value, 10);
+        degLabel.textContent = (((deg % 360) + 360) % 360) + '°';
       });
+      document.getElementById('autoRot').addEventListener('change', e => { autoRotate = e.target.checked; });
+      document.getElementById('togglePins').addEventListener('change', e => { showPins = e.target.checked; });
 
-      window.addEventListener('themechange', render);
-      buildSite();
-      updateYawUI();
       tick();
     })();
   </script>
