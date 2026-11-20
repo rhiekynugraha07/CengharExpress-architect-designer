@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cenghar Express Kodim Cimahi — 360° Interactive 3D Studio</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    canvas { touch-action: none; user-select: none; }
+    .cursor-orbit { cursor: grab; }
+    .cursor-orbit:active { cursor: grabbing; }
+    .cursor-pan { cursor: move; }
+    .btn-active {
+      background-color: #8B1E2D !important;
+      color: #FAF5EC !important;
+      border-color: #8B1E2D !important;
+    }
+  </style>
+</head>
+<body class="bg-transparent text-[var(--foreground)] antialiased m-0 p-0">
+  <div class="py-1.5 space-y-2">
+    <!-- Top Control Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-[var(--card-border)] text-xs">
+      <div class="flex flex-wrap items-center gap-1">
+        <button id="modeOrbit" class="btn-active px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] font-medium transition">
+          ↻ Putar 360°
+        </button>
+        <button id="modePan" class="px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] font-medium transition">
+          ✥ Geser Lahan
+        </button>
+        <span class="text-[var(--muted-foreground)] mx-0.5">|</span>
+        <button data-cam="overview" class="cam-btn btn-active px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] transition">Overview</button>
+        <button data-cam="cenghar" class="cam-btn px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] transition">Cenghar Booth</button>
+        <button data-cam="seating" class="cam-btn px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] transition">Area Kursi</button>
+        <button data-cam="music" class="cam-btn px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] transition">Music Area</button>
+        <button data-cam="tenant" class="cam-btn px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] transition">Booth Tenant (L)</button>
+        <button data-cam="parking" class="cam-btn px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] transition">Parkir</button>
+      </div>
+      <div class="flex items-center gap-1">
+        <button data-light="day" class="light-btn px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] transition">Siang</button>
+        <button data-light="golden" class="light-btn btn-active px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] transition">Sore</button>
+        <button data-light="night" class="light-btn px-2 py-1 rounded border border-[var(--border)] bg-[var(--card)] transition">Malam</button>
+      </div>
+    </div>
+
+    <!-- 3D Viewport (380px compact height for inline chat embed) -->
+    <div class="relative w-full rounded-xl overflow-hidden border border-[var(--card-border)]" style="height: 380px;">
+      <canvas id="glCanvas" class="w-full h-full block cursor-orbit"></canvas>
+      <canvas id="hudCanvas" class="w-full h-full block absolute inset-0 pointer-events-none"></canvas>
+
+      <!-- Bottom-Left 360 Slider -->
+      <div class="absolute bottom-2.5 left-2.5 px-2.5 py-1.5 rounded-lg backdrop-blur-md border border-white/15 text-xs flex items-center gap-2"
+           style="background: rgba(18, 16, 15, 0.78); color: #FAF5EC;">
+        <span>360°:</span>
+        <input id="yawSlider" type="range" min="-180" max="180" value="-30" class="w-28 accent-[#8B1E2D] cursor-pointer" />
+        <label class="flex items-center gap-1 cursor-pointer select-none ml-1">
+          <input id="autoRot" type="checkbox" class="accent-[#8B1E2D]" />
+          Auto
+        </label>
+      </div>
+
+      <!-- Bottom-Right Pan & Zoom D-Pad -->
+      <div class="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 text-xs">
+        <div class="flex items-center gap-1 p-1 rounded-lg backdrop-blur-md border border-white/15"
+             style="background: rgba(18, 16, 15, 0.78); color: #FAF5EC;">
+          <button data-pan="left" class="w-6 h-6 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Kiri">←</button>
+          <button data-pan="up" class="w-6 h-6 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Maju">↑</button>
+          <button data-pan="down" class="w-6 h-6 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Mundur">↓</button>
+          <button data-pan="right" class="w-6 h-6 rounded bg-white/10 hover:bg-white/20 flex items-center justify-center" title="Geser Kanan">→</button>
+          <button id="zoomIn" class="w-6 h-6 rounded bg-white/15 hover:bg-white/25 font-bold flex items-center justify-center ml-1" title="Zoom In">+</button>
+          <button id="zoomOut" class="w-6 h-6 rounded bg-white/15 hover:bg-white/25 font-bold flex items-center justify-center" title="Zoom Out">−</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const glCanvas = document.getElementById('glCanvas');
+      const hudCanvas = document.getElementById('hudCanvas');
+      const gl = glCanvas.getContext('webgl', { antialias: true, alpha: false });
+      const hud = hudCanvas.getContext('2d');
+
+      // Camera State (Tuned for Vertical Layout of Kodim Cimahi)
+      let cam = { yaw: -0.52, pitch: 0.48, dist: 25.0, target: [0.0, 1.0, 0.0] };
+      let targetCam = { yaw: -0.52, pitch: 0.48, dist: 25.0, target: [0.0, 1.0, 0.0] };
+      let dragMode = 'orbit';
+      let lightMode = 'golden';
+      let autoRotate = false;
+      let isDragging = false;
+      let activeBtn = 0;
+      let lastX = 0, lastY = 0;
+      let startTime = performance.now();
+
+      // Camera Presets mapped directly to Tembok.png zones
+      const CAM_PRESETS = {
+        overview: { yaw: -0.52, pitch: 0.48, dist: 25.0, target: [0.0, 1.0, 0.0] },
+        cenghar:  { yaw: -0.22, pitch: 0.28, dist: 11.5, target: [-0.6, 1.3, -6.8] },
+        seating:  { yaw: -0.55, pitch: 0.45, dist: 16.5, target: [0.0, 0.8, -0.5] },
+        music:    { yaw: -1.05, pitch: 0.32, dist: 12.0, target: [2.8, 1.4, -2.6] },
+        tenant:   { yaw: 0.15,  pitch: 0.36, dist: 14.5, target: [1.8, 1.4, 5.8] },
+        parking:  { yaw: -0.55, pitch: 0.40, dist: 18.0, target: [-0.5, 0.2, 9.5] }
+      };
+
+      const LABELS_3D = [
+        { id: 'cenghar', text: '1. CENGHAR BOOTH', pos: [-0.5, 3.2, -6.8] },
+        { id: 'seating', text: '2. Area Kursi', pos: [0.0, 1.2, -0.5] },
+        { id: 'music',   text: '3. Music Area (Stage)', pos: [2.8, 2.4, -2.6] },
+        { id: 'tenant',  text: '4. Booth Tenant (L-Shape)', pos: [1.8, 2.9, 6.2] },
+        { id: 'parking', text: '5. Area Parkir', pos: [-0.5, 0.5, 9.6] }
+      ];
+      let pinHitBoxes = [];
+
+      // WebGL Shader Engine with Procedural Materials (Brick, Corrugated Metal, Wood, Concrete, Foliage, Light Glows)
+      const vsSource = `
+        attribute vec3 aPos;
+        attribute vec3 aNorm;
+        attribute vec2 aUV;
+        attribute vec3 aCol;
+        attribute float aMat;
+
+        uniform mat4 uProj;
+        uniform mat4 uView;
+
+        varying vec3 vWorldPos;
+        varying vec3 vNorm;
+        varying vec2 vUV;
+        varying vec3 vCol;
+        varying float vMat;
+
+        void main() {
+          vWorldPos = aPos;
+          vNorm = aNorm;
+          vUV = aUV;
+          vCol = aCol;
+          vMat = aMat;
+          gl_Position = uProj * uView * vec4(aPos, 1.0);
+        }
+      `;
+
+      const fsSource = `
+        precision highp float;
+        varying vec3 vWorldPos;
+        varying vec3 vNorm;
+        varying vec2 vUV;
+        varying vec3 vCol;
+        varying float vMat;
+
+        uniform vec3 uCamPos;
+        uniform vec3 uSunDir;
+        uniform vec3 uSunCol;
+        uniform vec3 uSkyAmb;
+        uniform vec3 uGndAmb;
+        uniform float uLightOn;
+        uniform float uTime;
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(
+            mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+            mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+            f.y
+          );
+        }
+
+        void main() {
+          vec3 N = normalize(vNorm);
+          vec3 V = normalize(uCamPos - vWorldPos);
+          vec3 baseCol = vCol;
+          float rough = 0.65;
+          float specStr = 0.22;
+          float mat = floor(vMat + 0.5);
+
+          // 1. Dinding Perimeter (Tembok)
+          if (mat == 1.0) {
+            vec2 bUV = vec2((vWorldPos.x + vWorldPos.z) * 3.5, vWorldPos.y * 8.0);
+            float row = floor(bUV.y);
+            bUV.x += mod(row, 2.0) * 0.5;
+            vec2 cell = fract(bUV);
+            float mortar = step(0.06, cell.x) * step(cell.x, 0.94) * step(0.12, cell.y) * step(cell.y, 0.88);
+            baseCol = mix(vec3(0.68, 0.65, 0.60), baseCol, mortar);
+            rough = 0.80;
+          }
+          // 2. Corrugated Container (Cenghar Booth & Tenant Booths)
+          else if (mat == 2.0) {
+            float coord = (abs(N.z) > 0.5 ? vWorldPos.x : vWorldPos.z) * 32.0;
+            float rib = sin(coord);
+            N = normalize(N + vec3(cos(coord) * 0.20 * abs(N.z), 0.0, cos(coord) * 0.20 * abs(N.x)));
+            baseCol = baseCol * (0.95 + 0.06 * rib);
+            rough = 0.38;
+            specStr = 0.42;
+          }
+          // 3. Wood Decking (Stage Music & Bar Counters)
+          else if (mat == 3.0) {
+            float plank = fract(vWorldPos.z * 5.0);
+            float seam = smoothstep(0.0, 0.05, plank) * smoothstep(1.0, 0.95, plank);
+            float grain = noise(vec2(vWorldPos.x * 15.0, vWorldPos.z * 35.0));
+            baseCol = baseCol * (0.90 + 0.14 * grain) * (0.80 + 0.20 * seam);
+            rough = 0.45;
+            specStr = 0.35;
+          }
+          // 4. Courtyard Floor (Crushed Gravel & Pavers)
+          else if (mat == 4.0) {
+            float n = noise(vWorldPos.xz * 22.0);
+            baseCol = baseCol * (0.85 + 0.20 * n);
+            rough = 0.90;
+          }
+          // 5. Tropical Plants & Grass Planters
+          else if (mat == 5.0) {
+            float lf = noise(vWorldPos.xz * 9.0 + vWorldPos.y * 6.0);
+            baseCol = baseCol * (0.82 + 0.30 * lf);
+            rough = 0.55;
+          }
+          // 6. Warm LED Emissive Glows
+          else if (mat == 6.0) {
+            vec3 glow = mix(vec3(0.95, 0.93, 0.88), vec3(1.0, 0.82, 0.45) * 1.4, max(0.35, uLightOn));
+            gl_FragColor = vec4(glow, 1.0);
+            return;
+          }
+
+          float NdotL = max(0.0, dot(N, uSunDir));
+          vec3 H = normalize(uSunDir + V);
+          float spec = pow(max(0.0, dot(N, H)), mix(8.0, 48.0, 1.0 - rough)) * specStr * NdotL;
+          vec3 hemi = mix(uGndAmb, uSkyAmb, N.y * 0.5 + 0.5);
+
+          // Soft Contact Shadows beneath Booths & Stage
+          float shadow = 1.0;
+          if (vWorldPos.y < 0.30) {
+            // Cenghar Booth shadow
+            if (vWorldPos.x > -3.5 && vWorldPos.x < 2.5 && vWorldPos.z > -8.5 && vWorldPos.z < -5.0) shadow *= 0.55;
+            // Tenant Booths shadow
+            if (vWorldPos.z > 4.5 && vWorldPos.z < 8.5) shadow *= 0.60;
+            // Music Stage shadow
+            if (vWorldPos.x > 1.2 && vWorldPos.x < 4.5 && vWorldPos.z > -4.5 && vWorldPos.z < -0.8) shadow *= 0.65;
+          }
+
+          vec3 color = baseCol * (hemi + uSunCol * NdotL * shadow) + uSunCol * spec * shadow;
+
+          // Warm Architectural Lights: Cenghar Bar, Music Stage, String Lights, Tenant Stalls
+          vec3 warmCol = vec3(1.0, 0.76, 0.42) * (0.35 + 0.85 * uLightOn);
+          vec3 pCenghar = vec3(-0.5, 1.5, -6.5) - vWorldPos;
+          vec3 pStage   = vec3(2.8, 1.8, -2.6) - vWorldPos;
+          vec3 pYard1   = vec3(0.0, 2.5, -1.0) - vWorldPos;
+          vec3 pYard2   = vec3(0.0, 2.5, 2.5) - vWorldPos;
+          vec3 pTenant  = vec3(0.0, 2.0, 6.5) - vWorldPos;
+
+          float aCenghar = 1.0 / (1.0 + 0.25 * dot(pCenghar, pCenghar));
+          float aStage   = 1.0 / (1.0 + 0.22 * dot(pStage, pStage));
+          float aYard1   = 1.0 / (1.0 + 0.16 * dot(pYard1, pYard1));
+          float aYard2   = 1.0 / (1.0 + 0.16 * dot(pYard2, pYard2));
+          float aTenant  = 1.0 / (1.0 + 0.20 * dot(pTenant, pTenant));
+
+          vec3 ptLight = warmCol * (aCenghar * 1.35 + aStage * 1.5 + aYard1 * 0.75 + aYard2 * 0.75 + aTenant * 0.95);
+          color += baseCol * ptLight;
+
+          color = color / (color + vec3(0.85)) * 1.65;
+          gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+        }
+      `;
+
+      function compileShader(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return s;
+      }
+      const prog = gl.createProgram();
+      gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSource));
+      gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSource));
+      gl.linkProgram(prog);
+      gl.useProgram(prog);
+
+      const verts = [];
+      function hexRgb(hex) {
+        const v = parseInt(hex.slice(1), 16);
+        return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255];
+      }
+
+      function pushQuad(p0, p1, p2, p3, n, col, mat) {
+        const pts = [p0, p1, p2, p0, p2, p3];
+        const uvs = [[0,0],[1,0],[1,1],[0,0],[1,1],[0,1]];
+        for (let i = 0; i < 6; i++) {
+          verts.push(
+            pts[i][0], pts[i][1], pts[i][2],
+            n[0], n[1], n[2],
+            uvs[i][0], uvs[i][1],
+            col[0], col[1], col[2],
+            mat
+          );
+        }
+      }
+
+      function addBox(x, y, z, w, h, d, hex, mat = 0) {
+        const hw = w / 2, hh = h / 2, hd = d / 2;
+        const col = hexRgb(hex);
+        const v = [
+          [x - hw, y - hh, z - hd], [x + hw, y - hh, z - hd],
+          [x + hw, y + hh, z - hd], [x - hw, y + hh, z - hd],
+          [x - hw, y - hh, z + hd], [x + hw, y - hh, z + hd],
+          [x + hw, y + hh, z + hd], [x - hw, y + hh, z + hd]
+        ];
+        pushQuad(v[0], v[1], v[2], v[3], [0, 0, -1], col, mat);
+        pushQuad(v[5], v[4], v[7], v[6], [0, 0, 1],  col, mat);
+        pushQuad(v[4], v[0], v[3], v[7], [-1, 0, 0], col, mat);
+        pushQuad(v[1], v[5], v[6], v[2], [1, 0, 0],  col, mat);
+        pushQuad(v[3], v[2], v[6], v[7], [0, 1, 0],  col, mat);
+        pushQuad(v[4], v[5], v[1], v[0], [0, -1, 0], col, mat);
+      }
+
+      function addCylinder(x, y, z, rTop, rBot, h, segs, hex, mat = 0) {
+        const col = hexRgb(hex);
+        const y0 = y - h / 2, y1 = y + h / 2;
+        for (let i = 0; i < segs; i++) {
+          const a0 = (i / segs) * Math.PI * 2;
+          const a1 = ((i + 1) / segs) * Math.PI * 2;
+          const c0 = Math.cos(a0), s0 = Math.sin(a0);
+          const c1 = Math.cos(a1), s1 = Math.sin(a1);
+          const p0 = [x + c0 * rBot, y0, z + s0 * rBot];
+          const p1 = [x + c1 * rBot, y0, z + s1 * rBot];
+          const p2 = [x + c1 * rTop, y1, z + s1 * rTop];
+          const p3 = [x + c0 * rTop, y1, z + s0 * rTop];
+          pushQuad(p0, p1, p2, p3, [(c0 + c1) / 2, 0, (s0 + s1) / 2], col, mat);
+          pushQuad([x, y1, z], p3, p2, [x, y1, z], [0, 1, 0], col, mat);
+        }
+      }
+
+      function addEllipsoid(x, y, z, rx, ry, rz, latSegs, lonSegs, hex, mat = 0) {
+        const col = hexRgb(hex);
+        for (let i = 0; i < latSegs; i++) {
+          const t0 = (i / latSegs) * Math.PI, t1 = ((i + 1) / latSegs) * Math.PI;
+          for (let j = 0; j < lonSegs; j++) {
+            const p0 = (j / lonSegs) * Math.PI * 2, p1 = ((j + 1) / lonSegs) * Math.PI * 2;
+            const pt = (t, p) => [x + rx * Math.sin(t) * Math.cos(p), y + ry * Math.cos(t), z + rz * Math.sin(t) * Math.sin(p)];
+            const n = [Math.sin((t0 + t1) / 2) * Math.cos((p0 + p1) / 2), Math.cos((t0 + t1) / 2), Math.sin((t0 + t1) / 2) * Math.sin((p0 + p1) / 2)];
+            pushQuad(pt(t0, p0), pt(t1, p0), pt(t1, p1), pt(t0, p1), n, col, mat);
+          }
+        }
+      }
+
+      function addKetapangTree(x, baseY, z, h = 3.6, r = 1.8) {
+        addCylinder(x, baseY + h * 0.45, z, 0.08, 0.12, h * 0.9, 10, '#584635', 0);
+        addEllipsoid(x, baseY + h * 0.55, z, r * 0.95, 0.32, r * 0.95, 6, 12, '#386e39', 5);
+        addEllipsoid(x, baseY + h * 0.78, z, r * 0.70, 0.28, r * 0.70, 6, 12, '#488246', 5);
+        addEllipsoid(x, baseY + h * 0.98, z, r * 0.45, 0.22, r * 0.45, 5, 10, '#569452', 5);
+      }
+
+      function addTableSet(x, z) {
+        addBox(x, 0.38, z, 0.08, 0.72, 0.08, '#252525', 0);
+        addBox(x, 0.75, z, 0.85, 0.06, 0.85, '#b88448', 3);
+        addBox(x - 0.58, 0.42, z, 0.40, 0.75, 0.40, '#a5733c', 3);
+        addBox(x + 0.58, 0.42, z, 0.40, 0.75, 0.40, '#a5733c', 3);
+      }
+
+      function buildKodimGeometry() {
+        verts.length = 0;
+
+        // Ground base terrain pad (Anchors the site)
+        addBox(0, -0.65, 0.5, 20.0, 1.2, 28.0, '#383e34', 0);
+
+        // 1. AREA PARKIR (Top / North, Z: +8.0 to +12.0)
+        addBox(0, 0.02, 10.0, 13.0, 0.06, 4.4, '#5d636b', 4);
+        // Parking Line Strips
+        for (let x = -4.5; x <= 4.5; x += 2.2) {
+          addBox(x, 0.055, 10.0, 0.12, 0.01, 3.8, '#f5f5f5', 0);
+        }
+        // Parked Cars in Parking
+        addBox(-3.3, 0.65, 10.0, 1.8, 1.1, 3.6, '#282b30', 0);
+        addBox(-1.1, 0.62, 10.0, 1.7, 1.05, 3.4, '#80858e', 0);
+        addBox(1.1,  0.68, 10.0, 1.85, 1.15, 3.8, '#202226', 0);
+        addBox(3.3,  0.55, 10.0, 1.6, 0.95, 3.2, '#94252a', 0);
+
+        // 2. BOOTH TENANT L-SHAPE (Red Container / Stall Modular Units, Z: +5.0 to +8.0)
+        // Horizontal top wing (X: -4.5 to +4.5, Z: +7.2)
+        addBox(0.0, 1.45, 7.2, 9.6, 2.7, 1.8, '#9e261d', 2);
+        // Roof overhang & warm tenant counters
+        addBox(0.0, 2.85, 6.8, 9.8, 0.12, 2.2, '#202020', 0);
+        for (let x = -3.2; x <= 3.2; x += 2.1) {
+          addBox(x, 0.85, 6.25, 1.6, 0.85, 0.25, '#c58d4a', 3);
+          addBox(x, 1.85, 6.25, 1.5, 0.75, 0.1, '#fff0bd', 6); // tenant menu glow
+        }
+        // Vertical right wing (X: +3.8, Z: +2.8 to +6.5)
+        addBox(3.8, 1.45, 4.6, 1.8, 2.7, 3.6, '#9e261d', 2);
+        addBox(3.4, 2.85, 4.6, 2.2, 0.12, 3.8, '#202020', 0);
+        addBox(2.85, 0.85, 4.6, 0.25, 0.85, 2.8, '#c58d4a', 3);
+
+        // 3. TEMBOK PEMBATAS KIRI & 2 GREEN PLANTER ZONES ('Tembok' + 2 Green Blocks)
+        addBox(-5.4, 1.45, 0.5, 0.28, 2.8, 22.0, '#a54d32', 1); // Main Left Wall
+        addBox(-5.4, 2.88, 0.5, 0.36, 0.14, 22.0, '#26282b', 0); // Wall Coping
+
+        // Upper Green Planter Box (Z: +1.5 to +6.0)
+        addBox(-4.5, 0.28, 3.75, 1.4, 0.54, 4.6, '#4f7d3e', 5); // Planter block
+        addBox(-4.5, 0.58, 3.75, 1.3, 0.25, 4.5, '#3b6932', 5); // lush tropical foliage
+        addKetapangTree(-4.5, 0.0, 5.2, 3.8, 1.8);
+        addKetapangTree(-4.5, 0.0, 2.3, 3.6, 1.7);
+        // Integrated wood bench along planter edge
+        addBox(-3.7, 0.42, 3.75, 0.35, 0.08, 4.4, '#c68d4a', 3);
+
+        // Lower Green Planter Box (Z: -5.0 to -0.5)
+        addBox(-4.5, 0.28, -2.75, 1.4, 0.54, 4.6, '#4f7d3e', 5);
+        addBox(-4.5, 0.58, -2.75, 1.3, 0.25, 4.5, '#3b6932', 5);
+        addKetapangTree(-4.5, 0.0, -1.2, 3.6, 1.7);
+        addKetapangTree(-4.5, 0.0, -4.2, 3.8, 1.8);
+        addBox(-3.7, 0.42, -2.75, 0.35, 0.08, 4.4, '#c68d4a', 3);
+
+        // 4. BANGUNAN EKSISTING KODIM (Right Side / East, Z: -5.5 to +1.5)
+        addBox(4.9, 2.2, -2.0, 1.8, 4.2, 7.2, '#c8c4bc', 0); // Kodim building massing
+        addBox(3.95, 2.2, -2.0, 0.1, 1.8, 5.5, '#363a40', 0); // windows/frames
+
+        // 5. MUSIC AREA (Panggung Akustik Elevated Wooden Deck, Z: -4.2 to -0.8)
+        // Placed in front of Kodim Building (X: +2.8)
+        addBox(2.8, 0.28, -2.5, 2.2, 0.46, 3.6, '#b88242', 3); // elevated wood stage
+        addBox(3.8, 1.5, -2.5, 0.15, 2.2, 3.5, '#262626', 0); // stage back wall
+        // Vertical warm wood acoustic slats backdrop
+        for (let z = -4.1; z <= -0.9; z += 0.35) {
+          addBox(3.72, 1.5, z, 0.06, 2.1, 0.14, '#c58d4a', 3);
+        }
+        // Stage Sign ("LIVE STAGE")
+        addBox(3.68, 2.45, -2.5, 0.04, 0.32, 1.8, '#ffe199', 6);
+        // Stage Props: Microphone stand, Acoustic Guitar, Stage Spotlights
+        addBox(2.6, 0.85, -2.5, 0.04, 1.1, 0.04, '#151515', 0);
+        addBox(3.2, 0.82, -3.4, 0.25, 0.65, 0.35, '#202020', 0); // Amp speaker
+        addBox(3.2, 0.82, -1.6, 0.25, 0.65, 0.35, '#202020', 0);
+
+        // 6. CENGHAR BOOTH (Hero Container Coffee Bar, Bottom / South, Z: -7.0 to -9.0)
+        // Positioned at X: -0.6, matching 'Cenghar Booth' on Tembok.png!
+        addBox(-0.6, 0.12, -7.0, 5.8, 0.22, 2.8, '#26282b', 0); // dark deck plinth
+        addBox(-0.6, 0.24, -7.0, 5.7, 0.06, 2.7, '#c68d4a', 3); // teak deck
+        // White Corrugated Container Body (MatID 2)
+        addBox(-0.6, 1.55, -7.0, 5.2, 2.55, 2.2, '#eceae4', 2);
+        addBox(-0.6, 2.85, -7.0, 5.3, 0.12, 2.3, '#dedbd4', 0); // roof
+
+        // Open Barista Counter Window (Left side of Cenghar Booth)
+        addBox(-1.7, 0.75, -5.85, 2.7, 0.90, 0.14, '#eceae4', 2);
+        addBox(-1.7, 1.22, -5.72, 2.8, 0.08, 0.45, '#c58d4a', 3); // wood bar top
+        addBox(-1.7, 1.15, -5.58, 2.7, 0.035, 0.04, '#ffe199', 6); // glowing under-counter LED
+        // White 2-Group Espresso Machine + Grinders inside
+        addBox(-2.2, 1.48, -6.1, 0.68, 0.45, 0.40, '#f5f5f2', 0);
+        addBox(-1.5, 1.48, -6.1, 0.18, 0.48, 0.22, '#222222', 0);
+        // Retractable Cream Fabric Awning Canopy over Bar
+        addBox(-1.7, 2.45, -5.25, 2.9, 0.10, 1.3, '#ebdcc4', 0);
+        // Bar Stools
+        for (const sx of [-2.6, -2.0, -1.4, -0.8]) {
+          addCylinder(sx, 0.60, -5.4, 0.18, 0.18, 0.05, 12, '#c58d4a', 3);
+          addCylinder(sx, 0.28, -5.4, 0.02, 0.02, 0.55, 6, '#222222', 0);
+        }
+        // Right Glass Door & Indoor AC Nook
+        addBox(0.9, 1.35, -5.88, 1.8, 2.15, 0.05, '#8ab8c8', 0);
+        addBox(0.9, 2.44, -5.86, 1.9, 0.08, 0.08, '#181818', 0);
+        // Rooftop Sign Box ("CENGHAR EXPRESS - KODIM CIMAHI")
+        addBox(-0.6, 3.12, -5.85, 2.6, 0.45, 0.14, '#1b1d20', 0);
+        addBox(-0.6, 3.12, -5.76, 2.5, 0.38, 0.03, '#ffe199', 6); // glowing sign face
+
+        // 7. AREA KURSI (Central Courtyard Seating, Z: -5.0 to +4.5)
+        // Crushed dark grey gravel + large concrete stepping pavers
+        addBox(0.0, 0.02, 0.0, 10.4, 0.06, 14.5, '#565a5f', 4);
+        // Concrete Paver Walking Aisles
+        for (let z = -4.5; z <= 4.0; z += 1.4) {
+          addBox(0.0, 0.035, z, 1.1, 0.02, 1.1, '#b8b9bd', 0);
+        }
+        // Multiple 2-4 Pax Wooden Cafe Table Sets throughout the courtyard
+        const tableGrid = [
+          [-2.2, -3.8], [-0.5, -3.8],
+          [-2.2, -1.8], [-0.5, -1.8], [1.4, -1.8],
+          [-2.2, 0.2],  [-0.5, 0.2],  [1.4, 0.2],
+          [-2.2, 2.2],  [-0.5, 2.2],  [1.4, 2.2],
+          [-2.2, 4.2],  [-0.5, 4.2],  [1.4, 4.2]
+        ];
+        for (const [tx, tz] of tableGrid) {
+          addTableSet(tx, tz);
+        }
+
+        // Festive Overhead String Lights Poles & Crisscrossing Wires
+        for (const [px, pz] of [[-3.5, -4.5], [2.2, -4.5], [-3.5, 4.5], [2.2, 4.5], [-3.5, 0.0], [2.2, 0.0]]) {
+          addCylinder(px, 1.6, pz, 0.04, 0.05, 3.2, 6, '#222222', 0);
+          addEllipsoid(px, 3.15, pz, 0.08, 0.08, 0.08, 6, 8, '#ffe199', 6);
+        }
+      }
+
+      buildKodimGeometry();
+
+      const vbo = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+
+      const stride = 12 * 4;
+      const bindAttr = (name, size, offset) => {
+        const loc = gl.getAttribLocation(prog, name);
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, offset * 4);
+      };
+      bindAttr('aPos', 3, 0);
+      bindAttr('aNorm', 3, 3);
+      bindAttr('aUV', 2, 6);
+      bindAttr('aCol', 3, 8);
+      bindAttr('aMat', 1, 11);
+
+      const uProj = gl.getUniformLocation(prog, 'uProj');
+      const uView = gl.getUniformLocation(prog, 'uView');
+      const uCamPos = gl.getUniformLocation(prog, 'uCamPos');
+      const uSunDir = gl.getUniformLocation(prog, 'uSunDir');
+      const uSunCol = gl.getUniformLocation(prog, 'uSunCol');
+      const uSkyAmb = gl.getUniformLocation(prog, 'uSkyAmb');
+      const uGndAmb = gl.getUniformLocation(prog, 'uGndAmb');
+      const uLightOn = gl.getUniformLocation(prog, 'uLightOn');
+      const uTime = gl.getUniformLocation(prog, 'uTime');
+
+      function perspective(fov, aspect, near, far) {
+        const f = 1.0 / Math.tan(fov / 2);
+        const nf = 1 / (near - far);
+        return new Float32Array([
+          f / aspect, 0, 0, 0,
+          0, f, 0, 0,
+          0, 0, (far + near) * nf, -1,
+          0, 0, 2 * far * near * nf, 0
+        ]);
+      }
+
+      function getCameraBasis() {
+        const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+        const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+        const eye = [
+          cam.target[0] + cam.dist * cp * sy,
+          cam.target[1] + cam.dist * sp,
+          cam.target[2] - cam.dist * cp * cy
+        ];
+        const F = [-cp * sy, -sp, cp * cy];
+        const R = [cy, 0, sy];
+        const U = [-sp * sy, cp, sp * cy];
+        return { eye, F, R, U };
+      }
+
+      function lookAtView(basis) {
+        const { eye, F, R, U } = basis;
+        return new Float32Array([
+          R[0], U[0], -F[0], 0,
+          R[1], U[1], -F[1], 0,
+          R[2], U[2], -F[2], 0,
+          -(R[0]*eye[0] + R[1]*eye[1] + R[2]*eye[2]),
+          -(U[0]*eye[0] + U[1]*eye[1] + U[2]*eye[2]),
+          (F[0]*eye[0] + F[1]*eye[1] + F[2]*eye[2]),
+          1
+        ]);
+      }
+
+      function project3DToHUD(pt, W, H, basis, aspect) {
+        const vx = pt[0] - basis.eye[0], vy = pt[1] - basis.eye[1], vz = pt[2] - basis.eye[2];
+        const cx = vx * basis.R[0] + vy * basis.R[1] + vz * basis.R[2];
+        const cy = vx * basis.U[0] + vy * basis.U[1] + vz * basis.U[2];
+        const cz = vx * basis.F[0] + vy * basis.F[1] + vz * basis.F[2];
+        if (cz <= 0.4) return null;
+        const f = 1.0 / Math.tan(0.78 / 2);
+        return {
+          x: (W / 2) * (1 + (cx * f / aspect) / cz),
+          y: (H / 2) * (1 - (cy * f) / cz)
+        };
+      }
+
+      function renderFrame() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = glCanvas.getBoundingClientRect();
+        const W = Math.round(rect.width * dpr);
+        const H = Math.round(rect.height * dpr);
+        if (glCanvas.width !== W || glCanvas.height !== H) {
+          glCanvas.width = W; glCanvas.height = H;
+          hudCanvas.width = W; hudCanvas.height = H;
+        }
+        gl.viewport(0, 0, W, H);
+        gl.enable(gl.DEPTH_TEST);
+
+        let bg, sunDir, sunCol, skyAmb, gndAmb, lightOn;
+        if (lightMode === 'day') {
+          bg = [0.68, 0.82, 0.94];
+          sunDir = [0.45, 0.82, -0.35];
+          sunCol = [1.05, 1.02, 0.96];
+          skyAmb = [0.58, 0.68, 0.80];
+          gndAmb = [0.35, 0.33, 0.30];
+          lightOn = 0.0;
+        } else if (lightMode === 'night') {
+          bg = [0.07, 0.11, 0.20];
+          sunDir = [-0.30, 0.75, -0.45];
+          sunCol = [0.16, 0.22, 0.38];
+          skyAmb = [0.14, 0.20, 0.34];
+          gndAmb = [0.08, 0.09, 0.12];
+          lightOn = 1.0;
+        } else {
+          // Golden Hour
+          bg = [0.42, 0.54, 0.70];
+          sunDir = [-0.62, 0.52, -0.58];
+          sunCol = [1.18, 0.88, 0.62];
+          skyAmb = [0.52, 0.52, 0.62];
+          gndAmb = [0.32, 0.27, 0.24];
+          lightOn = 0.85;
+        }
+
+        gl.clearColor(bg[0], bg[1], bg[2], 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        const basis = getCameraBasis();
+        const aspect = rect.width / rect.height;
+        gl.uniformMatrix4fv(uProj, false, perspective(0.78, aspect, 0.5, 90.0));
+        gl.uniformMatrix4fv(uView, false, lookAtView(basis));
+        gl.uniform3fv(uCamPos, basis.eye);
+        gl.uniform3fv(uSunDir, sunDir);
+        gl.uniform3fv(uSunCol, sunCol);
+        gl.uniform3fv(uSkyAmb, skyAmb);
+        gl.uniform3fv(uGndAmb, gndAmb);
+        gl.uniform1f(uLightOn, lightOn);
+        gl.uniform1f(uTime, (performance.now() - startTime) * 0.001);
+
+        gl.drawArrays(gl.TRIANGLES, 0, verts.length / 12);
+
+        // Draw HUD Hotspot Badges
+        hud.setTransform(dpr, 0, 0, dpr, 0, 0);
+        hud.clearRect(0, 0, rect.width, rect.height);
+        pinHitBoxes = [];
+
+        for (const lb of LABELS_3D) {
+          const p = project3DToHUD(lb.pos, rect.width, rect.height, basis, aspect);
+          if (!p) continue;
+          hud.font = '600 10.5px system-ui, sans-serif';
+          const tw = hud.measureText(lb.text).width;
+          const bw = tw + 14, bh = 20;
+          const bx = p.x - bw / 2, by = p.y - bh - 6;
+
+          hud.fillStyle = 'rgba(20, 18, 16, 0.82)';
+          hud.strokeStyle = '#8B1E2D';
+          hud.lineWidth = 1.2;
+          hud.beginPath();
+          hud.roundRect(bx, by, bw, bh, 5);
+          hud.fill();
+          hud.stroke();
+
+          hud.fillStyle = '#FAF5EC';
+          hud.textAlign = 'center';
+          hud.textBaseline = 'middle';
+          hud.fillText(lb.text, p.x, by + bh / 2);
+          pinHitBoxes.push({ id: lb.id, x: bx, y: by, w: bw, h: bh });
+        }
+      }
+
+      function panCamera(dx, dy) {
+        const basis = getCameraBasis();
+        const s = cam.dist * 0.0016;
+        const fl = Math.hypot(basis.F[0], basis.F[2]) || 1;
+        const fx = basis.F[0] / fl, fz = basis.F[2] / fl;
+        targetCam.target[0] = Math.max(-8, Math.min(8, targetCam.target[0] - dx * basis.R[0] * s + dy * fx * s));
+        targetCam.target[2] = Math.max(-10, Math.min(10, targetCam.target[2] - dx * basis.R[2] * s + dy * fz * s));
+      }
+
+      const yawSlider = document.getElementById('yawSlider');
+      function syncSlider() {
+        let deg = Math.round((targetCam.yaw * 180) / Math.PI) % 360;
+        if (deg > 180) deg -= 360;
+        if (deg < -180) deg += 360;
+        yawSlider.value = deg;
+      }
+
+      function tick() {
+        if (autoRotate && !isDragging) {
+          targetCam.yaw += 0.0045;
+          syncSlider();
+        }
+        const k = 0.12;
+        cam.yaw += (targetCam.yaw - cam.yaw) * k;
+        cam.pitch += (targetCam.pitch - cam.pitch) * k;
+        cam.dist += (targetCam.dist - cam.dist) * k;
+        for (let i = 0; i < 3; i++) cam.target[i] += (targetCam.target[i] - cam.target[i]) * k;
+        renderFrame();
+        requestAnimationFrame(tick);
+      }
+
+      glCanvas.addEventListener('contextmenu', e => e.preventDefault());
+      glCanvas.addEventListener('pointerdown', e => {
+        const rect = glCanvas.getBoundingClientRect();
+        const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+        for (const hb of pinHitBoxes) {
+          if (cx >= hb.x && cx <= hb.x + hb.w && cy >= hb.y && cy <= hb.y + hb.h) {
+            setPreset(hb.id);
+            return;
+          }
+        }
+        isDragging = true;
+        activeBtn = e.button;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        glCanvas.setPointerCapture(e.pointerId);
+      });
+
+      glCanvas.addEventListener('pointermove', e => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastX, dy = e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
+        if (dragMode === 'pan' || activeBtn === 2 || e.shiftKey) {
+          panCamera(dx, dy);
+        } else {
+          targetCam.yaw -= dx * 0.0085;
+          targetCam.pitch = Math.max(0.18, Math.min(1.38, targetCam.pitch + dy * 0.007));
+          syncSlider();
+        }
+      });
+      glCanvas.addEventListener('pointerup', () => { isDragging = false; });
+      glCanvas.addEventListener('pointercancel', () => { isDragging = false; });
+      glCanvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        targetCam.dist = Math.max(8.0, Math.min(36.0, targetCam.dist + e.deltaY * 0.018));
+      }, { passive: false });
+
+      document.getElementById('modeOrbit').addEventListener('click', (e) => {
+        dragMode = 'orbit';
+        e.currentTarget.classList.add('btn-active');
+        document.getElementById('modePan').classList.remove('btn-active');
+        glCanvas.className = 'w-full h-full block cursor-orbit';
+      });
+      document.getElementById('modePan').addEventListener('click', (e) => {
+        dragMode = 'pan';
+        e.currentTarget.classList.add('btn-active');
+        document.getElementById('modeOrbit').classList.remove('btn-active');
+        glCanvas.className = 'w-full h-full block cursor-pan';
+      });
+
+      function setPreset(name) {
+        const p = CAM_PRESETS[name];
+        if (!p) return;
+        targetCam = { yaw: p.yaw, pitch: p.pitch, dist: p.dist, target: [...p.target] };
+        syncSlider();
+        document.querySelectorAll('.cam-btn').forEach(b => b.classList.toggle('btn-active', b.dataset.cam === name));
+      }
+      document.querySelectorAll('.cam-btn').forEach(b => b.addEventListener('click', () => setPreset(b.dataset.cam)));
+      document.querySelectorAll('.light-btn').forEach(b => b.addEventListener('click', () => {
+        lightMode = b.dataset.light;
+        document.querySelectorAll('.light-btn').forEach(x => x.classList.toggle('btn-active', x === b));
+      }));
+      document.querySelectorAll('[data-pan]').forEach(b => b.addEventListener('click', () => {
+        const d = b.dataset.pan;
+        if (d === 'left') panCamera(60, 0);
+        if (d === 'right') panCamera(-60, 0);
+        if (d === 'up') panCamera(0, 60);
+        if (d === 'down') panCamera(0, -60);
+      }));
+      document.getElementById('zoomIn').addEventListener('click', () => { targetCam.dist = Math.max(8, targetCam.dist - 2.8); });
+      document.getElementById('zoomOut').addEventListener('click', () => { targetCam.dist = Math.min(36, targetCam.dist + 2.8); });
+      yawSlider.addEventListener('input', e => { targetCam.yaw = (parseFloat(e.target.value) * Math.PI) / 180; });
+      document.getElementById('autoRot').addEventListener('change', e => { autoRotate = e.target.checked; });
+
+      tick();
+    })();
+  </script>
+</body>
+</html>
