@@ -1,12 +1,12 @@
 <!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><title>Cenghar Express — Studio Cimahi</title><style>
 *{box-sizing:border-box}body{margin:0;background:#eee9df;color:#30291f;font:14px system-ui,sans-serif}header{padding:20px 26px 12px;display:flex;align-items:center;justify-content:space-between;gap:16px}h1{font-size:22px;font-weight:600;margin:0;letter-spacing:-.5px}header p{margin:5px 0 0;color:#776e61;font-size:12px}.toolbar{padding:0 26px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}button,select{font:inherit;border:1px solid #cfc6b7;background:#faf7f0;color:#463b2d;padding:9px 12px;border-radius:7px;cursor:pointer}button:hover{background:#e0d6c7}button.active{background:#673a35;color:#fff3de;border-color:#673a35}button:focus-visible,select:focus-visible{outline:3px solid #bb875a;outline-offset:2px}.spacer{flex:1}#view{position:relative;height:calc(100dvh - 168px);min-height:420px;margin:0 18px 18px;border-radius:12px;overflow:hidden;background:#c8bdae}canvas{display:block;width:100%;height:100%;touch-action:none}#hud{position:absolute;inset:0;pointer-events:none}#hint{position:absolute;top:15px;left:16px;color:#faf3e6;background:#332b21b0;padding:8px 12px;border-radius:6px;font-size:12px;pointer-events:none}#bottom{position:absolute;bottom:14px;left:14px;right:14px;display:flex;justify-content:space-between;gap:10px;pointer-events:none}#bottom>div{pointer-events:auto;display:flex;gap:4px;align-items:center;background:#f9f5edeb;padding:5px;border-radius:8px}#bottom button{padding:6px 11px}#error{display:none;position:absolute;inset:0;padding:30px;background:#eee9df;align-content:center}#toggleLabels{padding:6px}.small{font-size:12px;color:#7b6d5c} @media(max-width:700px){header{padding:15px}h1{font-size:18px}.toolbar{padding:0 15px 10px;gap:4px}button,select{font-size:12px;padding:7px 9px}#view{height:68dvh;margin:0 8px}#bottom{flex-wrap:wrap}header p{max-width:230px}.spacer{display:none}}
-</style></head><body><header><div><h1>Cenghar Express · Kodim Cimahi</h1><p>Model konsep berdasarkan foto lokasi dan denah · ukuran perkiraan</p></div><select id="sceneMode" aria-label="Mode desain"><option value="proposed">Usulan kafe</option><option value="existing" selected>Kondisi eksisting</option></select></header>
+</style></head><body><header><div><h1>Cenghar Express · Kodim Cimahi</h1><p>Petak tenant 2 × 3 m · konter 150 × 60 cm · meja masak 120 × 45 cm</p></div><select id="sceneMode" aria-label="Mode desain"><option value="proposed">Usulan kafe</option><option value="existing" selected>Kondisi eksisting</option></select></header>
 <div class="toolbar">
-<button data-view="plan" class="active">Denah Canva</button><button data-view="overview">Seluruh lokasi</button><button data-view="cenghar">Booth Cenghar</button><button data-view="seating">Area duduk</button><button data-view="music">Panggung</button><button data-view="tenant">Tenant</button><button data-view="parking">Parkir</button><span class="spacer"></span>
-<button data-light="day">Siang</button><button data-light="golden" class="active">Sore</button><button data-light="night">Malam</button></div>
+<button data-view="plan" class="active">Denah Canva</button><button data-view="overview">Seluruh lokasi</button><button data-view="cenghar">Booth Cenghar</button><button data-view="seating">Area duduk</button><button data-view="music">Panggung</button><button data-view="tenant">Tenant</button><button data-view="interior">Dalam tenant 2 × 3 m</button><button data-view="parking">Parkir</button><button data-view="fence">Pagar portable</button><span class="spacer"></span>
+<button data-light="day">Siang</button><button data-light="golden" class="active">Sore</button><button data-light="night">Malam</button><button id="floodlights" aria-pressed="false">Lampu sorot · Padam</button></div>
 <div id="view"><canvas id="scene" aria-label="Model 3D Cenghar Cimahi"></canvas><canvas id="hud"></canvas><div id="hint">Tarik untuk memutar · scroll / cubit untuk zoom · klik kanan untuk geser</div><div id="bottom"><div><button id="orbit" class="active">Putar</button><button id="pan">Geser</button><button id="auto">Otomatis</button></div><div><button id="toggleLabels">Label</button><button id="left" aria-label="Geser kiri">←</button><button id="right" aria-label="Geser kanan">→</button><button id="zoomIn" aria-label="Perbesar">+</button><button id="zoomOut" aria-label="Perkecil">−</button><button id="full">Layar penuh</button></div></div><div id="error" role="alert"></div></div>
 
-<details style="margin:16px 26px;padding:14px;background:#faf7f0;border-radius:8px"><summary style="cursor:pointer">12 tenant kuliner usulan · nama konsep</summary><ol style="columns:2;line-height:1.9"><li><strong>Seblak Ngebul</strong> — Seblak & ceker</li><li><strong>Batagor Pojok</strong> — Batagor & siomay</li><li><strong>Mie Ayam Mang Asep</strong> — Mie ayam & bakso</li><li><strong>Ayam Geprek Nyala</strong> — Ayam geprek</li><li><strong>Sate Bara</strong> — Sate ayam & kambing</li><li><strong>Nasi Goreng Wajan</strong> — Nasi goreng & kwetiau</li><li><strong>Soto Rempah</strong> — Soto ayam & nasi</li><li><strong>Dimsum Kukus</strong> — Dimsum & hakau</li><li><strong>Burger Roda</strong> — Burger & kentang</li><li><strong>Roti Bakar Senja</strong> — Roti bakar & pisang</li><li><strong>Es Teh Kebun</strong> — Teh buah & lemon tea</li><li><strong>Manis Dingin</strong> — Es krim & es campur</li></ol></details>
+<details style="margin:16px 26px;padding:14px;background:#faf7f0;border-radius:8px"><summary style="cursor:pointer">13 tenant kuliner usulan · nama konsep</summary><ol style="columns:2;line-height:1.9"><li><strong>Seblak Ngebul</strong> — Seblak & ceker</li><li><strong>Batagor Pojok</strong> — Batagor & siomay</li><li><strong>Mie Ayam Mang Asep</strong> — Mie ayam & bakso</li><li><strong>Ayam Geprek Nyala</strong> — Ayam geprek</li><li><strong>Sate Bara</strong> — Sate ayam & kambing</li><li><strong>Nasi Goreng Wajan</strong> — Nasi goreng & kwetiau</li><li><strong>Soto Rempah</strong> — Soto ayam & nasi</li><li><strong>Takoyaki Maru</strong> — Takoyaki & okonomiyaki</li><li><strong>Dimsum Kukus</strong> — Dimsum & hakau</li><li><strong>Burger Roda</strong> — Burger & kentang</li><li><strong>Roti Bakar Senja</strong> — Roti bakar & pisang</li><li><strong>Es Teh Kebun</strong> — Teh buah & lemon tea</li><li><strong>Manis Dingin</strong> — Es krim & es campur</li></ol></details>
 
 <script>
 /**
@@ -1374,10 +1374,8 @@ const branches = [];
           width:(right-left)*.02,depth:(bottom-top)*.02};
       }
       // Keep the corner clear so the last top-row counter is not behind the side row.
-      const topLeft=PLAN.tenantTop.x-PLAN.tenantTop.width/2;
-      const topRight=PLAN.tenantRight.x-PLAN.tenantRight.width/2-.55;
-      PLAN.tenantTop.width=topRight-topLeft;
-      PLAN.tenantTop.x=(topLeft+topRight)/2;
+      Object.assign(PLAN.tenantTop,{x:1.66,z:11.56,width:16,depth:3});
+      Object.assign(PLAN.tenantRight,{x:11.36,z:4.96,width:3,depth:10});
       function placeZone(start, oldX, oldZ, zone, scaleX=1, scaleZ=1) {
         for(let i=start;i<verts.length;i+=12) {
           verts[i]=zone.x+(verts[i]-oldX)*scaleX;
@@ -1536,41 +1534,78 @@ const branches = [];
         const boothScale=PLAN.cenghar.width/5.25;
         placeZone(start,-.85,-11.5,PLAN.cenghar,proposed?-boothScale:boothScale,proposed?-boothScale:boothScale);
         if(!proposed)return;
+        // Separate fence modules with detachable feet and connector pins.
+        const fenceX = -8.03;
+        const fenceSegments = [[-22.2,-4.53],[-1.53,14.10],[17.50,20.70]];
+        for (const [startZ,endZ] of fenceSegments) {
+          const count=Math.ceil((endZ-startZ)/1.8);
+          const pitch=(endZ-startZ)/count;
+          const moduleLength=pitch-.055;
+          for(let module=0;module<count;module++) {
+            const centerZ=startZ+(module+.5)*pitch;
+            for(const end of [-1,1]) {
+              const postZ=centerZ+end*moduleLength/2;
+              addBox(fenceX,.57,postZ,.045,1.10,.045,'#434b46');
+              addBox(fenceX,.055,postZ,.58,.07,.10,'#454c47');
+              for(const foot of [-.25,.25])
+                addBox(fenceX+foot,.018,postZ,.075,.025,.12,'#303530');
+              for(const height of [.36,.91]) {
+                addBox(fenceX,height,postZ+end*.027,.075,.035,.065,'#8c9390',9);
+                addCylinder(fenceX,height+.025,postZ+end*.027,.012,.012,.065,12,'#b1b6b2',9);
+              }
+            }
+            for(const height of [.22,1.10])
+              addBox(fenceX,height,centerZ,.045,.045,moduleLength,'#434b46');
+            const bars=Math.floor(moduleLength/.14);
+            for(let bar=1;bar<bars;bar++)
+              addBox(fenceX,.66,centerZ-moduleLength/2+bar*moduleLength/bars,
+                .022,.85,.022,'#535c54');
+          }
+        }
 
-        // Twelve separate demountable kiosks: seven across, five along the right.
+
+        // Thirteen demountable kiosks: eight across and five along the right.
         function portableBooth(x,z,w,d,sideways=false) {
-          const begin=verts.length;
-          // Service shelf with ceramic bowls, seasoning jars and a steel pan.
-          addBox(0,1.36,d/2-.22,w-.24,.045,.30,'#b48762',3);
-          for(let j=0;j<4;j++){
-            let x=-w*.33+j*.18;
-            addCylinder(x,1.49,d/2-.23,.063,.063,.21,18,['#d7ad72','#99884c','#bc7655','#cfaa8c'][j]);
-            addCylinder(x,1.605,d/2-.23,.068,.068,.035,18,'#54483a');
+          const begin=verts.length, front=-d/2, bodyZ=front+.30;
+          addBox(0,.025,0,1.98,.025,d-.02,'#c4c5b1',4);
+          for(const side of [-1,1]){
+            addBox(side*.99,.045,0,.02,.012,d,'#f1e9d7');
+            addBox(0,.045,side*(d/2-.01),2,.012,.02,'#f1e9d7');
           }
-          for(let j=0;j<3;j++)addCylinder(w*.28,1.18+j*.036,-d/2+.17,.105,.061,.048,24,'#d7c8af');
-          addCylinder(-w*.30,1.25,-d/2+.20,.145,.13,.17,28,'#b0aea3',9);
-          addCylinder(-w*.30,1.35,-d/2+.20,.148,.148,.026,28,'#bab9aa',9);
-          addCylinder(-w*.30,1.38,-d/2+.20,.034,.034,.045,16,'#38332a');
-          addBox(0,.19,0,w,.12,d,'#42443e');
-          for(const dx of [-w/2+.12,w/2-.12])for(const dz of [-d/2+.12,d/2-.12]) {
-            addCylinder(dx,.09,dz,.07,.07,.12,12,'#292c29');
-            addBox(dx,1.22,dz,.045,2.12,.045,'#343b35');
+          addBox(0,.94,bodyZ,1.50,.05,.60,'#eeece5');
+          addBox(0,.58,front+.025,1.44,.70,.026,'#eeece5');
+          addBox(0,.21,bodyZ,1.44,.035,.56,'#858c8b',9);
+          addBox(0,.45,bodyZ,1.39,.025,.50,'#e9e6dd');
+          for(const dx of [-.716,.716])addBox(dx,.58,bodyZ,.026,.70,.54,'#eeece5');
+          for(const dx of [-.67,.67])for(const dz of [-.22,.22]){
+            addEllipsoid(dx,.075,bodyZ+dz,.035,.072,.072,12,20,'#303533');
+            addCylinder(dx,.16,bodyZ+dz,.022,.022,.09,16,'#aeb5b4',9);
+            addBox(dx,.94,bodyZ+dz,.065,.06,.065,'#aeb5b4',9);
+            addBox(dx,1.40,bodyZ+dz,.038,.87,.038,'#eeeae1');
           }
-          addBox(0,.67,-d/2+.27,w-.12,.85,.46,'#b39673',3);
-          for(let dx=-w/2+.09;dx<w/2-.05;dx+=.11)addBox(dx,.67,-d/2+.025,.045,.81,.025,'#73513b',3);
-          addBox(0,1.12,-d/2+.20,w,.065,.62,'#d2b18a',3);
-          addBox(0,1.05,d/2-.04,w-.10,1.7,.055,'#eee1ca');
-          addBox(0,2.43,-.27,w+.16,.09,d+.85,'#e5d4b6');
-          addBox(0,2.31,-d/2-.68,w+.16,.20,.035,'#e5d4b6');
-          addBox(0,2.31,-d/2-.10,w+.04,.09,.12,'#48443a');
-          addBox(0,2.33,0,w-.25,.025,.08,'#ffe199',6);
-          person(0,.28,'#45473e');
-          addBox(0,1.15,.153,.29,.49,.03,'#68503a',3);
-          addBox(0,1.10,.13,.18,.09,.014,'#876f51',3);
-          for(const dx of [-.077,.077])addBox(dx,1.42,.17,.027,.14,.028,'#624d39');
-          for(const dx of [-.043,.043])addEllipsoid(dx,1.62,.178,.012,.009,.007,8,10,'#49352c');
-          addEllipsoid(0,1.57,.166,.024,.035,.032,8,12,'#ac7659');
-          addBox(0,2.25,-d/2-.10,w-.10,.024,.08,'#ffd395',6);
+          for(const dz of [-.29,.29])addBox(0,1.98,bodyZ+dz,1.50,.29,.025,'#eeece5');
+          for(const dx of [-.737,.737])addBox(dx,1.98,bodyZ,.025,.29,.555,'#eeece5');
+          addBox(0,1.81,bodyZ,1.3,.018,.035,'#ffd395',6);
+          // Rear stainless workbench and two-burner hob within each tenant.
+          const cookingZ=d/2-.30;
+          addBox(0,.84,cookingZ,1.20,.045,.45,'#b9bfc0',9);
+          for(const dx of [-.53,.53])for(const dz of [-.16,.16])
+            addBox(dx,.45,cookingZ+dz,.035,.77,.035,'#929c9d',9);
+          addBox(0,.27,cookingZ,1.13,.025,.38,'#939d9e',9);
+          addBox(0,.915,cookingZ,.69,.10,.33,'#343b3b');
+          for(const dx of [-.19,.19]){
+            addCylinder(dx,.974,cookingZ,.087,.087,.018,24,'#141c1e');
+            addBox(dx,.989,cookingZ,.22,.018,.016,'#626969',9);
+            addBox(dx,.989,cookingZ,.016,.018,.22,'#626969',9);
+          }
+          addCylinder(-.19,1.07,cookingZ,.105,.105,.15,28,'#b6bdbd',9);
+          addCylinder(-.19,1.15,cookingZ,.109,.109,.018,28,'#c3c9c8',9);
+          addCylinder(-.19,1.18,cookingZ,.026,.026,.035,16,'#303737');
+          addBox(.19,1.015,cookingZ,.18,.025,.18,'#434b49');
+          addBox(.19,1.025,cookingZ-.16,.025,.03,.20,'#343a37');
+          person(0,.06,'#45473e');
+          for(let j=0;j<3;j++)addCylinder(.47,.99+j*.038,bodyZ,.105,.065,.04,24,'#d8cbb6');
+          addCylinder(-.43,1.06,bodyZ,.13,.13,.17,28,'#b6b5ab',9);
           for(let i=begin;i<verts.length;i+=12){
             const vx=verts[i],vz=verts[i+2],nx=verts[i+3],nz=verts[i+5];
             verts[i]=x+(sideways?vz:vx);verts[i+2]=z+(sideways?-vx:vz);
@@ -1578,8 +1613,74 @@ const branches = [];
           }
         }
         const top=PLAN.tenantTop,side=PLAN.tenantRight;
-        for(let i=0;i<7;i++)portableBooth(top.x-top.width/2+(i+.5)*top.width/7,top.z,top.width/7-.12,top.depth-.16);
-        for(let i=0;i<5;i++)portableBooth(side.x,side.z-side.depth/2+(i+.5)*side.depth/5,side.depth/5-.12,side.width-.16,true);
+        for(const zone of [top,side]){
+          addBox(zone.x,.005,zone.z,zone.width,.02,zone.depth,'#939c8f',4);
+          const ridgeAlongX = zone.width > zone.depth;
+          // Individual rear panels attached to the shared canopy frame.
+          const wallLength = ridgeAlongX ? zone.width : zone.depth;
+          const panelCount = Math.round(wallLength);
+          for(let panel=0;panel<panelCount;panel++){
+            const along = -wallLength/2+(panel+.5)*wallLength/panelCount;
+            const positionX = ridgeAlongX ? zone.x+along : zone.x+zone.width/2-.045;
+            const positionZ = ridgeAlongX ? zone.z+zone.depth/2-.045 : zone.z+along;
+            const panelWidth = wallLength/panelCount-.018;
+            addBox(positionX,1.345,positionZ,
+              ridgeAlongX?panelWidth:.032,2.57,ridgeAlongX?.032:panelWidth,'#c8c2b4',4);
+            for(const edge of [-1,1]){
+              const seamX = positionX+(ridgeAlongX?edge*panelWidth/2:.027);
+              const seamZ = positionZ+(ridgeAlongX?.027:edge*panelWidth/2);
+              addBox(seamX,1.345,seamZ,.035,2.57,.035,'#8e7560');
+            }
+            for(const y of [.20,2.50]){
+              addBox(positionX,y,positionZ+(ridgeAlongX?.027:0),
+                ridgeAlongX?panelWidth:.044,.07,ridgeAlongX?.044:panelWidth,'#a18d76');
+            }
+          }
+
+          const roofLength = (ridgeAlongX ? zone.width : zone.depth) + .08;
+          const halfSpan = ((ridgeAlongX ? zone.depth : zone.width) + .12) / 2;
+          const eaveHeight = 2.65;
+          const ridgeHeight = 3.23;
+          const roofPoint = (along, across, height) => ridgeAlongX
+            ? [zone.x + along, height, zone.z + across]
+            : [zone.x + across, height, zone.z + along];
+          function roofFace(points, color) {
+            const edgeA = new THREE.Vector3(...points[1]).sub(new THREE.Vector3(...points[0]));
+            const edgeB = new THREE.Vector3(...points[2]).sub(new THREE.Vector3(...points[0]));
+            const normal = edgeA.cross(edgeB).normalize();
+            if(normal.y < 0) normal.negate();
+            pushQuad(...points, normal.toArray(), hexRgb(color), 0);
+          }
+          for(const side of [-1,1]) {
+            roofFace([
+              roofPoint(-roofLength/2,side*halfSpan,eaveHeight),
+              roofPoint(roofLength/2,side*halfSpan,eaveHeight),
+              roofPoint(roofLength/2,0,ridgeHeight),
+              roofPoint(-roofLength/2,0,ridgeHeight)
+            ], '#ac4e38');
+            // Lower edge adds visible thickness to the removable canopy panels.
+            roofFace([
+              roofPoint(-roofLength/2,side*halfSpan,eaveHeight-.045),
+              roofPoint(roofLength/2,side*halfSpan,eaveHeight-.045),
+              roofPoint(roofLength/2,side*halfSpan,eaveHeight),
+              roofPoint(-roofLength/2,side*halfSpan,eaveHeight)
+            ], '#8c3c2d');
+          }
+          for(const end of [-1,1]) {
+            const left=roofPoint(end*roofLength/2,-halfSpan,eaveHeight);
+            const right=roofPoint(end*roofLength/2,halfSpan,eaveHeight);
+            const peak=roofPoint(end*roofLength/2,0,ridgeHeight);
+            roofFace([left,right,peak,peak], '#a44b35');
+          }
+          addBox(zone.x,ridgeHeight,zone.z,
+            ridgeAlongX?roofLength:.065,.045,ridgeAlongX?.065:roofLength,'#8d3c2e');
+
+          for(const dx of [-zone.width/2,zone.width/2])for(const dz of [-zone.depth/2,zone.depth/2])
+            addBox(zone.x+dx,1.32,zone.z+dz,.045,2.64,.045,'#8b918e',9);
+        }
+
+        for(let i=0;i<8;i++)portableBooth(top.x-top.width/2+(i+.5)*top.width/8,top.z,2,3);
+        for(let i=0;i<5;i++)portableBooth(side.x,side.z-side.depth/2+(i+.5)*side.depth/5,2,3,true);
         start=verts.length;
         addBox(2.94,0.18,-2.65,1.68,0.30,3.28,'#a16940',3);
         for (const z of [-3.94,-1.42]) addBox(3.38,0.51,z,0.31,0.40,0.38,'#303233');
@@ -1590,6 +1691,58 @@ const branches = [];
         for(const z of [-4.38,-4.54]) addBox(2.94,.27,z,1.5,.018,.018,'#ffe199',6);
 addCylinder(2.75,0.91,-2.65,0.025,0.025,1.15,8,'#303233');
         placeZone(start,2.94,-2.65,PLAN.music,PLAN.music.width/1.68,PLAN.music.depth/3.28);
+        // Freestanding pitched canopy over the music platform.
+        const stageCanopy = {
+          x: PLAN.music.x,
+          z: PLAN.music.z,
+          width: PLAN.music.width + .32,
+          length: PLAN.music.depth + .32,
+          deck: .33,
+          eave: 3.15,
+          ridge: 3.72
+        };
+        const canopyLeft = stageCanopy.x - stageCanopy.width/2;
+        const canopyRight = stageCanopy.x + stageCanopy.width/2;
+        const canopyNear = stageCanopy.z - stageCanopy.length/2;
+        const canopyFar = stageCanopy.z + stageCanopy.length/2;
+        for (const side of [-1,1]) {
+          const postX = stageCanopy.x + side*(PLAN.music.width/2-.12);
+          for (const end of [-1,1]) {
+            const postZ = stageCanopy.z + end*(PLAN.music.depth/2-.12);
+            addBox(postX,(stageCanopy.eave+stageCanopy.deck)/2,postZ,
+              .075,stageCanopy.eave-stageCanopy.deck,.075,'#626b68',9);
+            addBox(postX,stageCanopy.deck+.018,postZ,.21,.035,.21,'#69716e',9);
+          }
+          addBox(postX,stageCanopy.eave-.04,stageCanopy.z,.065,.09,
+            PLAN.music.depth-.16,'#656e6b',9);
+        }
+        function stageCanopyFace(points,color) {
+          const a = new THREE.Vector3(...points[1]).sub(new THREE.Vector3(...points[0]));
+          const b = new THREE.Vector3(...points[2]).sub(new THREE.Vector3(...points[0]));
+          const normal = a.cross(b).normalize();
+          if(normal.y<0)normal.negate();
+          pushQuad(...points,normal.toArray(),hexRgb(color),0);
+        }
+        for(const edgeX of [canopyLeft,canopyRight]) {
+          stageCanopyFace([
+            [edgeX,stageCanopy.eave,canopyNear],
+            [edgeX,stageCanopy.eave,canopyFar],
+            [stageCanopy.x,stageCanopy.ridge,canopyFar],
+            [stageCanopy.x,stageCanopy.ridge,canopyNear]
+          ],'#ac4e38');
+          addBox(edgeX,stageCanopy.eave-.025,stageCanopy.z,.045,.07,
+            stageCanopy.length,'#8d3c2e');
+        }
+        for(const endZ of [canopyNear,canopyFar]) {
+          const peak=[stageCanopy.x,stageCanopy.ridge,endZ];
+          stageCanopyFace([[canopyLeft,stageCanopy.eave,endZ],
+            [canopyRight,stageCanopy.eave,endZ],peak,peak],'#a44b35');
+          addBox(stageCanopy.x,stageCanopy.eave-.04,endZ,
+            stageCanopy.width,.09,.065,'#656e6b',9);
+        }
+        addBox(stageCanopy.x,stageCanopy.ridge,stageCanopy.z,.065,.045,
+          stageCanopy.length,'#8d3c2e');
+
         start=verts.length;
         // Meja kerja di balik konter, dengan celah akses di tengah fasad.
         addBox(-2.32,0.67,-12.69,1.72,0.93,0.59,'#763837',3);
@@ -1724,13 +1877,13 @@ scene.environment=generator.fromEquirectangular(environmentTexture).texture;
 environmentTexture.dispose();generator.dispose();
 const dummy=new THREE.Object3D();
 const barkDirection=new THREE.Vector3();
-const tenantBusinesses=[["Seblak Ngebul", "Seblak & ceker"], ["Batagor Pojok", "Batagor & siomay"], ["Mie Ayam Mang Asep", "Mie ayam & bakso"], ["Ayam Geprek Nyala", "Ayam geprek"], ["Sate Bara", "Sate ayam & kambing"], ["Nasi Goreng Wajan", "Nasi goreng & kwetiau"], ["Soto Rempah", "Soto ayam & nasi"], ["Dimsum Kukus", "Dimsum & hakau"], ["Burger Roda", "Burger & kentang"], ["Roti Bakar Senja", "Roti bakar & pisang"], ["Es Teh Kebun", "Teh buah & lemon tea"], ["Manis Dingin", "Es krim & es campur"]];
+const tenantBusinesses=[["Seblak Ngebul", "Seblak & ceker"], ["Batagor Pojok", "Batagor & siomay"], ["Mie Ayam Mang Asep", "Mie ayam & bakso"], ["Ayam Geprek Nyala", "Ayam geprek"], ["Sate Bara", "Sate ayam & kambing"], ["Nasi Goreng Wajan", "Nasi goreng & kwetiau"], ["Soto Rempah", "Soto ayam & nasi"], ["Takoyaki Maru", "Takoyaki & okonomiyaki"], ["Dimsum Kukus", "Dimsum & hakau"], ["Burger Roda", "Burger & kentang"], ["Roti Bakar Senja", "Roti bakar & pisang"], ["Es Teh Kebun", "Teh buah & lemon tea"], ["Manis Dingin", "Es krim & es campur"]];
 const tenantSigns=tenantBusinesses.map(([name,menu],index)=>{
  const c=document.createElement('canvas');c.width=c.height=512;
- const ctx=c.getContext('2d'), colors=['#872b19','#675121','#234d48','#972c29','#5a3227','#775126','#39613e','#814d45','#934516','#705228','#2e644d','#844465'];
+ const ctx=c.getContext('2d'), colors=['#872b19','#675121','#234d48','#972c29','#5a3227','#775126','#39613e','#954d37','#814d45','#934516','#705228','#2e644d','#844465'];
  ctx.fillStyle=colors[index];ctx.fillRect(0,0,512,512);
  ctx.strokeStyle='#ffedbc';ctx.lineWidth=10;ctx.beginPath();ctx.arc(256,256,240,0,Math.PI*2);ctx.stroke();
- const icons=['🌶️','🥟','🍜','🍗','🍢','🍳','🍲','🧺','🍔','🍞','🍃','🍦'];
+ const icons=['🌶️','🥟','🍜','🍗','🍢','🍳','🍲','🐙','🧺','🍔','🍞','🍃','🍦'];
  ctx.textAlign='center';ctx.font='130px "Noto Color Emoji", "Segoe UI Emoji", sans-serif';ctx.fillText(icons[index],256,225);
  ctx.fillStyle='#fff4cf';ctx.font='bold 50px Georgia';ctx.fillText(name,256,305,430);
  ctx.font='28px sans-serif';ctx.fillText(menu,256,358,370);
@@ -1739,11 +1892,11 @@ const tenantSigns=tenantBusinesses.map(([name,menu],index)=>{
 });
 function addTenantSigns(){
  tenantBusinesses.forEach((tenant,i)=>{
-  const top=i<7,zone=top?PLAN.tenantTop:PLAN.tenantRight,count=top?7:5,index=top?i:i-7;
+  const top=i<8,zone=top?PLAN.tenantTop:PLAN.tenantRight,count=top?8:5,index=top?i:i-8;
   const width=(top?zone.width:zone.depth)/count-.10;
   const sign=new THREE.Mesh(new THREE.CircleGeometry(.34,64),tenantSigns[i]);
-  if(top){sign.position.set(zone.x-zone.width/2+(index+.5)*zone.width/count,.67,zone.z-(zone.depth-.16)/2-.085);sign.rotation.y=Math.PI;}
-  else {sign.position.set(zone.x-(zone.width-.16)/2-.085,.67,zone.z-zone.depth/2+(index+.5)*zone.depth/count);sign.rotation.y=-Math.PI/2;}
+  if(top){sign.position.set(zone.x-zone.width/2+(index+.5)*zone.width/count,.67,zone.z-zone.depth/2-.085);sign.rotation.y=Math.PI;}
+  else {sign.position.set(zone.x-zone.width/2-.085,.67,zone.z-zone.depth/2+(index+.5)*zone.depth/count);sign.rotation.y=-Math.PI/2;}
   const rimGeometry=new THREE.CylinderGeometry(.36,.36,.10,64);
   rimGeometry.rotateX(Math.PI/2);
   const housing=new THREE.Mesh(rimGeometry,metal);
@@ -1753,8 +1906,8 @@ function addTenantSigns(){
  });
 }
 const cafeLights=new THREE.Group();cafeLights.scale.x=-1;scene.add(cafeLights);
-for(let i=0;i<12;i++){
- const top=i<7,z=top?PLAN.tenantTop:PLAN.tenantRight,n=top?7:5,j=top?i:i-7;
+for(let i=0;i<tenantBusinesses.length;i++){
+ const top=i<8,z=top?PLAN.tenantTop:PLAN.tenantRight,n=top?8:5,j=top?i:i-8;
  const light=new THREE.PointLight('#ffd8a0',1,4,2);
  light.position.set(top?z.x-z.width/2+(j+.5)*z.width/n:z.x-.5,2.05,top?z.z-.5:z.z-z.depth/2+(j+.5)*z.depth/n);cafeLights.add(light);
 }
@@ -1764,6 +1917,54 @@ for(let i=0;i<5;i++){
  light.position.set(PLAN.building.x-1.48,.18,z);light.target.position.set(PLAN.building.x-1,3.4,z);
  cafeLights.add(light,light.target);
 }
+// Optional warm floodlights directed onto seating and circulation.
+let floodlightsEnabled = false;
+const floodlightFixtures = new THREE.Group();
+floodlightFixtures.scale.x = -1;
+scene.add(floodlightFixtures);
+const floodlightLenses = [];
+for (const z of [-10, -2, 6]) {
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.045,.06,4.4,12),
+    new THREE.MeshStandardMaterial({color:'#414946',roughness:.65}));
+  pole.position.set(-5.05,2.2,z);
+  floodlightFixtures.add(pole);
+  const light = new THREE.SpotLight('#ffdfad',0,16,Math.PI/3.1,.75,1.5);
+  light.position.set(-5.05,4.4,z);
+  light.target.position.set(.5,0,z+1.2);
+  floodlightFixtures.add(light,light.target);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(.35,.20,.10),
+    new THREE.MeshStandardMaterial({color:'#303b3c',roughness:.5}));
+  head.position.copy(light.position);
+  head.lookAt(light.target.position);
+  floodlightFixtures.add(head);
+  const lensMaterial = new THREE.MeshStandardMaterial({color:'#e5dfc8',emissive:'#ffe0a8',emissiveIntensity:0});
+  const lens = new THREE.Mesh(new THREE.PlaneGeometry(.30,.15),lensMaterial);
+  lens.position.z=.055;
+  head.add(lens);
+  floodlightLenses.push(lensMaterial);
+}
+function updateFloodlights() {
+  const active = proposal && currentLighting === 'night' && floodlightsEnabled;
+  floodlightFixtures.visible = proposal;
+  for (const child of floodlightFixtures.children) {
+    if (child.isSpotLight) child.intensity = active ? 95 : 0;
+  }
+  for (const child of cafeLights.children) {
+    if (child.isSpotLight) child.intensity = active ? 12 : 0;
+  }
+  floodlightLenses.forEach(material=>material.emissiveIntensity=active?2:0);
+  const button=document.getElementById('floodlights');
+  button.disabled=!proposal;
+  button.setAttribute('aria-pressed',String(active));
+  button.classList.toggle('active',active);
+  button.textContent=active?'Lampu sorot · Menyala':'Lampu sorot · Padam';
+  needsRender=true;
+  renderer.shadowMap.needsUpdate=true;
+}
+document.getElementById('floodlights').onclick=()=>{
+  floodlightsEnabled = currentLighting==='night' ? !floodlightsEnabled : true;
+  setLighting('night');
+};
 let proposal=true;
 function buildScene(proposed) {
   proposal=proposed;
@@ -1828,17 +2029,20 @@ function setLighting(mode) {
   for(const material of materials.values()) material.envMapIntensity=mode==='night'?.05:.3;
   tenantSigns.forEach(m=>m.emissiveIntensity=mode==='night'?1.05:mode==='golden'?.48:.18);
   cafeLights.children.forEach(l=>{if(l.isLight)l.intensity=(l.isSpotLight?12:6)*(mode==='night'?1:mode==='golden'?.72:.03);});
+  updateFloodlights();
   metal.envMapIntensity=mode==='night'?.4:1.2;
   ground.material.envMapIntensity=mode==='night'?.03:.15;
   const emissive=materials.get(6);if(emissive) emissive.emissiveIntensity=settings.lamps*2;
   document.querySelectorAll('[data-light]').forEach(button=>button.classList.toggle('active',button.dataset.light===mode));
 }
 const views={
+  fence:{position:[-16,4.2,-8],target:[-7.2,.7,-2.5]},
+  interior:{position:[-8.7,2.5,9.2],target:[-5.34,.8,11.56]},
   plan:{position:[0,60,-11.6],target:[0,0,-1]},
   overview:{position:[-23,24,-38],target:[0,.6,-1]},
   cenghar:{position:[-5,3.5,-10],target:[-2.55,1.6,-18.43]},
   seating:{position:[-2.2,3.3,-8.4],target:[0,1.0,4]},
-  music:{position:[-1.4,3,-10],target:[4.45,1.2,-7.04]},
+  music:{position:[-3.2,3.5,-12],target:[4.45,1.6,-7.04]},
   tenant:{position:[-5.7,1.88,4.6],target:[-.85,1.18,10.6]},
   parking:{position:[-6.5,8,23],target:[-.59,.6,15.8]}
 };
@@ -1890,7 +2094,7 @@ document.getElementById('toggleLabels').onclick=event=>{labels=!labels;needsRend
 const hotspots=[
  ['cenghar','Cenghar Booth',[PLAN.cenghar.x,3.9,PLAN.cenghar.z]],
  ['music','Music Area',[PLAN.music.x,1,PLAN.music.z]],
- ['tenant','7 booth portable',[PLAN.tenantTop.x,2.5,PLAN.tenantTop.z]],
+ ['tenant','8 booth portable',[PLAN.tenantTop.x,2.5,PLAN.tenantTop.z]],
  ['tenant','5 booth portable',[PLAN.tenantRight.x,2.5,PLAN.tenantRight.z]],
  ['parking','Parkir',[PLAN.parking.x,.6,PLAN.parking.z]],
  ['seating','Area Kursi',[-.1,.6,-3]],
@@ -1914,7 +2118,7 @@ function drawLabels() {
   if(!labels) return;
   hud.font='12px system-ui';
   for(const [id,baseTitle,position] of hotspots) {
-    const title=proposal && baseTitle==='Tembok'?'Trotoar · jalan raya':!proposal && id==='seating'?'Lapangan basket':!proposal && id==='cenghar'?'Paviliun eksisting':baseTitle;
+    const title=proposal && baseTitle==='Tembok'?'Pagar portable':!proposal && id==='seating'?'Lapangan basket':!proposal && id==='cenghar'?'Paviliun eksisting':baseTitle;
     if(!proposal && (['music','tenant'].includes(id)||baseTitle.startsWith('Masuk'))) continue;
     const p=new THREE.Vector3(-position[0],position[1],position[2]).project(camera);if(p.z>1) continue;
     const x=(p.x+1)*width/2,y=(1-p.y)*height/2;
@@ -1929,7 +2133,7 @@ canvas.addEventListener('click',event=>{
   if(hit)setView(hit.id);
 });
 canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();showError('Konteks grafis terhenti. Muat ulang file untuk membuka model kembali.');});
-document.getElementById('sceneMode').value='proposed';buildScene(true);setLighting('night');labels=false;document.getElementById('toggleLabels').classList.remove('active');setView('tenant',true);resize();
+document.getElementById('sceneMode').value='proposed';buildScene(true);floodlightsEnabled=true;setLighting('day');labels=false;document.getElementById('toggleLabels').classList.remove('active');setView('fence',true);resize();
 let lastFrame=performance.now();
 function animate() {
   const now=performance.now(),blend=1-Math.exp(-(now-lastFrame)/180);lastFrame=now;
