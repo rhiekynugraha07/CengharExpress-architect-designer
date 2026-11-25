@@ -1,6 +1,6 @@
 <!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><title>Cenghar Express — Studio Cimahi</title><style>
 *{box-sizing:border-box}body{margin:0;background:#eee9df;color:#30291f;font:14px system-ui,sans-serif}header{padding:20px 26px 12px;display:flex;align-items:center;justify-content:space-between;gap:16px}h1{font-size:22px;font-weight:600;margin:0;letter-spacing:-.5px}header p{margin:5px 0 0;color:#776e61;font-size:12px}.toolbar{padding:0 26px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}button,select{font:inherit;border:1px solid #cfc6b7;background:#faf7f0;color:#463b2d;padding:9px 12px;border-radius:7px;cursor:pointer}button:hover{background:#e0d6c7}button.active{background:#673a35;color:#fff3de;border-color:#673a35}button:focus-visible,select:focus-visible{outline:3px solid #bb875a;outline-offset:2px}.spacer{flex:1}#view{position:relative;height:calc(100dvh - 168px);min-height:420px;margin:0 18px 18px;border-radius:12px;overflow:hidden;background:#c8bdae}canvas{display:block;width:100%;height:100%;touch-action:none}#hud{position:absolute;inset:0;pointer-events:none}#hint{position:absolute;top:15px;left:16px;color:#faf3e6;background:#332b21b0;padding:8px 12px;border-radius:6px;font-size:12px;pointer-events:none}#bottom{position:absolute;bottom:14px;left:14px;right:14px;display:flex;justify-content:space-between;gap:10px;pointer-events:none}#bottom>div{pointer-events:auto;display:flex;gap:4px;align-items:center;background:#f9f5edeb;padding:5px;border-radius:8px}#bottom button{padding:6px 11px}#error{display:none;position:absolute;inset:0;padding:30px;background:#eee9df;align-content:center}#toggleLabels{padding:6px}.small{font-size:12px;color:#7b6d5c} @media(max-width:700px){header{padding:15px}h1{font-size:18px}.toolbar{padding:0 15px 10px;gap:4px}button,select{font-size:12px;padding:7px 9px}#view{height:68dvh;margin:0 8px}#bottom{flex-wrap:wrap}header p{max-width:230px}.spacer{display:none}}
-</style></head><body><header><div><h1>Cenghar Cimahi · 3 Opsi Desain</h1><p>Petak tenant 2 × 3 m · konter 150 × 60 cm · meja masak 120 × 45 cm</p></div><select id="sceneMode" aria-label="Mode desain"><option value="existing">Kondisi existing</option><option value="canopy" selected>Usulan kanopi</option><option value="hall">Usulan hall</option></select></header>
+</style></head><body><header><div><h1>Cenghar Cimahi · 3 Opsi Desain</h1><p>Petak tenant 2 × 3 m · konter 150 × 60 cm · meja masak 120 × 45 cm</p></div><select id="sceneMode" aria-label="Mode desain"><option value="existing" selected>Kondisi existing</option><option value="canopy">Usulan kanopi</option><option value="hall">Usulan hall</option></select></header>
 <div class="toolbar">
 <button data-view="plan" class="active">Denah Canva</button><button data-view="overview">Seluruh lokasi</button><button data-view="cenghar">Booth Cenghar</button><button data-view="seating">Area duduk</button><button data-view="music">Panggung</button><button data-view="tenant">Tenant</button><button data-view="interior">Dalam tenant 2 × 3 m</button><button data-view="parking">Parkir</button><button data-view="fence">Pagar portable</button><span class="spacer"></span>
 <button data-light="day">Siang</button><button data-light="golden" class="active">Sore</button><button data-light="night">Malam</button><button id="hallRoof" aria-pressed="false">Buka atap hall</button><button id="floodlights" aria-pressed="false">Lampu sorot · Padam</button></div>
@@ -1085,7 +1085,7 @@ try {
   showError('Browser ini belum dapat menampilkan WebGL. Buka file dengan Chrome atau Edge dan aktifkan akselerasi grafis.');
   return;
 }
-renderer.setPixelRatio(Math.min(2,Math.max(devicePixelRatio,1.35)));
+renderer.setPixelRatio(Math.min(1.25,Math.max(devicePixelRatio,1)));
 renderer.physicallyCorrectLights=true;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1116,7 +1116,7 @@ scene.add(hemi);
 const sun = new THREE.DirectionalLight('#ffdfb6',2.5);
 sun.position.set(-18,25,-14);
 sun.castShadow = true;
-sun.shadow.mapSize.set(2048,2048);
+sun.shadow.mapSize.set(1024,1024);
 Object.assign(sun.shadow.camera,{left:-24,right:24,top:32,bottom:-32,near:1,far:100});
 sun.shadow.normalBias = 0.025;
 sun.shadow.bias = -0.00012;
@@ -1968,7 +1968,7 @@ document.getElementById('floodlights').onclick=()=>{
   floodlightsEnabled = currentLighting==='night' ? !floodlightsEnabled : true;
   setLighting('night');
 };
-let designMode='canopy';
+let designMode='existing';
 const hall = new THREE.Group();
 hall.scale.x = -1;
 scene.add(hall);
@@ -2212,7 +2212,7 @@ function resize() {
   const {width,height}=viewport.getBoundingClientRect();
   needsRender=true;
   renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();
-  const ratio=Math.min(devicePixelRatio,1.7);hudCanvas.width=width*ratio;hudCanvas.height=height*ratio;
+  const ratio=Math.min(devicePixelRatio,1.25);hudCanvas.width=width*ratio;hudCanvas.height=height*ratio;
 }
 new ResizeObserver(resize).observe(viewport);
 function drawLabels() {
@@ -2236,7 +2236,7 @@ canvas.addEventListener('click',event=>{
   if(hit)setView(hit.id);
 });
 canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();showError('Konteks grafis terhenti. Muat ulang file untuk membuka model kembali.');});
-document.getElementById('sceneMode').value='proposed';buildScene(true);floodlightsEnabled=true;setLighting('day');labels=false;document.getElementById('toggleLabels').classList.remove('active');setView('overview',true);resize();
+document.getElementById('sceneMode').value='existing';buildScene(false);floodlightsEnabled=true;setLighting('day');labels=false;document.getElementById('toggleLabels').classList.remove('active');setView('overview',true);resize();
 let lastFrame=performance.now();
 function animate() {
   const now=performance.now(),blend=1-Math.exp(-(now-lastFrame)/180);lastFrame=now;
